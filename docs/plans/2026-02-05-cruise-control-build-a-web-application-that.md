@@ -53,11 +53,19 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     },
     {
       "id": "SPAWN-003",
-      "name": "Database Layer & API",
+      "name": "Database Initialization & Table Management",
       "use_spawn_team": true,
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-      "task_ids": ["CRUISE-006", "CRUISE-006A", "CRUISE-006B", "CRUISE-006C", "CRUISE-007A", "CRUISE-007B"]
+      "task_ids": ["CRUISE-006", "CRUISE-006A", "CRUISE-006C", "CRUISE-007A"]
+    },
+    {
+      "id": "SPAWN-003B",
+      "name": "Row-level CRUD Operations",
+      "use_spawn_team": true,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-006B", "CRUISE-007B"]
     },
     {
       "id": "SPAWN-004",
@@ -258,7 +266,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
       "critical_security_note": "Table and column names CANNOT be parameterized in SQL DML statements (SELECT, INSERT, UPDATE, DELETE). All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before interpolation into any SQL string.",
-      "spawn_instance": "SPAWN-003"
+      "spawn_instance": "SPAWN-003B"
     },
     {
       "id": "CRUISE-007A",
@@ -294,7 +302,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
-      "spawn_instance": "SPAWN-003"
+      "spawn_instance": "SPAWN-003B"
     },
     {
       "id": "CRUISE-008A",
@@ -468,7 +476,8 @@ CRUISE-001 (.gitignore)
 |----------|-------|-------------|----------------|
 | SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
 | SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
-| SPAWN-003 | 006, 006A, 006B, 006C, 007A, 007B | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
+| SPAWN-003 | 006, 006A, 006C, 007A | DB init, table schema ops & API — tightly coupled DDL path | Yes — SQL injection prevention needs review |
+| SPAWN-003B | 006B, 007B | Row-level CRUD & API — can run in parallel with table schema work after DB init | Yes — SQL injection prevention needs review |
 | SPAWN-004 | 008A, 008B, 008C, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
