@@ -1,6 +1,12 @@
 import { test, expect, Page } from "@playwright/test";
 import { ensureKeysExist, generateToken } from "./helpers";
 
+let tableCounter = 0;
+function uniqueTableName(): string {
+  tableCounter++;
+  return `table_test_${Date.now()}_${tableCounter}`;
+}
+
 test.beforeAll(() => {
   ensureKeysExist();
 });
@@ -15,13 +21,14 @@ async function loginAndGoToTables(page: Page): Promise<void> {
 
 test.describe("Table Management", () => {
   test("should create a new table", async ({ page }) => {
+    const tableName = uniqueTableName();
     await loginAndGoToTables(page);
 
     // Open create form
     await page.locator("button:has-text('+ New Table')").click();
 
     // Fill in table name
-    await page.locator("#table-name").fill("test_users");
+    await page.locator("#table-name").fill(tableName);
 
     // Fill first column
     const colNameInputs = page.locator('[name="col_name"]');
@@ -36,10 +43,11 @@ test.describe("Table Management", () => {
     await page.waitForLoadState("networkidle");
 
     // Verify table appears in list
-    await expect(page.locator("text=test_users")).toBeVisible();
+    await expect(page.locator(`text=${tableName}`)).toBeVisible();
   });
 
   test("should delete a table", async ({ page }) => {
+    const tableName = uniqueTableName();
     await loginAndGoToTables(page);
 
     // First create a table to delete
@@ -51,30 +59,31 @@ test.describe("Table Management", () => {
         "HX-Request": "true",
       },
       data: {
-        name: "to_delete",
+        name: tableName,
         columns: [{ name: "id", col_type: "INTEGER", nullable: false, default_value: null }],
       },
     });
 
     await page.reload();
-    await expect(page.locator("text=to_delete")).toBeVisible();
+    await expect(page.locator(`text=${tableName}`)).toBeVisible();
 
     // Accept the confirmation dialog
     page.on("dialog", (dialog) => dialog.accept());
 
     // Click delete button for the table
     await page
-      .locator("tr", { has: page.locator("text=to_delete") })
+      .locator("tr", { has: page.locator(`text=${tableName}`) })
       .locator("button:has-text('Delete')")
       .click();
 
     await page.waitForLoadState("networkidle");
 
     // Verify table is removed
-    await expect(page.locator("td:has-text('to_delete')")).not.toBeVisible();
+    await expect(page.locator(`td:has-text('${tableName}')`)).not.toBeVisible();
   });
 
   test("should navigate to table detail view", async ({ page }) => {
+    const tableName = uniqueTableName();
     await loginAndGoToTables(page);
 
     // Create a table via API
@@ -86,7 +95,7 @@ test.describe("Table Management", () => {
         "HX-Request": "true",
       },
       data: {
-        name: "detail_test",
+        name: tableName,
         columns: [
           { name: "id", col_type: "INTEGER", nullable: false, default_value: null },
           { name: "name", col_type: "TEXT", nullable: true, default_value: null },
@@ -95,10 +104,10 @@ test.describe("Table Management", () => {
     });
 
     await page.reload();
-    await page.locator("a:has-text('detail_test')").first().click();
+    await page.locator(`a:has-text('${tableName}')`).first().click();
 
-    await expect(page).toHaveURL(/\/tables\/detail_test/);
-    await expect(page.locator("h2")).toHaveText("detail_test");
+    await expect(page).toHaveURL(new RegExp(`/tables/${tableName}`));
+    await expect(page.locator("h2")).toHaveText(tableName);
     // Schema should show columns
     await expect(page.locator("td:has-text('id')")).toBeVisible();
     await expect(page.locator("td:has-text('name')")).toBeVisible();
