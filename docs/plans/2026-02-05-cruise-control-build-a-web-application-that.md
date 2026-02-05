@@ -271,7 +271,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-007A",
       "subject": "Implement Table/Schema API route handlers",
-      "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers for table and schema management: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
+      "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers for table and schema management (split from original CRUISE-007 to mirror the database layer split — CRUISE-006A/006C handle table/schema DB ops, this task exposes them as API endpoints): (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
       "blocked_by": ["CRUISE-004", "CRUISE-006A", "CRUISE-006C"],
       "complexity": "medium",
       "acceptance_criteria": [
@@ -289,7 +289,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-007B",
       "subject": "Implement Row Data API route handlers",
-      "description": "Extend src/routes.rs (or src/routes/ module) with Axum handlers for row-level data operations: (1) GET /api/tables/:name/rows — list rows (with pagination). (2) POST /api/tables/:name/rows — insert a row. (3) PUT /api/tables/:name/rows/:id — update a row. (4) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
+      "description": "Extend src/routes.rs (or src/routes/ module) with Axum handlers for row-level data operations (split from original CRUISE-007 to mirror the database layer split — CRUISE-006B handles row-level DB ops, this task exposes them as API endpoints): (1) GET /api/tables/:name/rows — list rows (with pagination). (2) POST /api/tables/:name/rows — insert a row. (3) PUT /api/tables/:name/rows/:id — update a row. (4) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
       "blocked_by": ["CRUISE-007A", "CRUISE-006B"],
       "complexity": "medium",
       "acceptance_criteria": [
