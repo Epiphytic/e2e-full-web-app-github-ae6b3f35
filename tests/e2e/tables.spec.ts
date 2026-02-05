@@ -6,7 +6,7 @@ test.describe.configure({ mode: "parallel" });
 let tableCounter = 0;
 function uniqueTableName(): string {
   tableCounter++;
-  return `table_test_${Date.now()}_${tableCounter}`;
+  return `table_test_${Date.now()}_${process.pid}_${tableCounter}`;
 }
 
 async function loginAndGoToTables(page: Page): Promise<void> {
