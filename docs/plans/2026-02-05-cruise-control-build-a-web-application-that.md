@@ -180,6 +180,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "The authentication cookie MUST always be set with all three security attributes: HttpOnly (prevents XSS-based cookie theft via document.cookie access), Secure (ensures the cookie is only transmitted over HTTPS, preventing interception on plain HTTP), and SameSite=Strict (prevents the browser from sending the cookie on cross-origin requests, mitigating CSRF attacks). These attributes must be enforced via a reusable helper/constant so that any handler setting the auth cookie cannot accidentally omit them.",
       "spawn_instance": "SPAWN-002"
     },
     {
@@ -383,6 +384,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "When setting the authentication cookie in POST /login, it is critical to use all three security attributes: HttpOnly (prevents XSS-based access to the cookie via JavaScript), Secure (ensures the cookie is only sent over HTTPS connections), and SameSite=Strict (mitigates CSRF by preventing the browser from including the cookie in cross-origin requests). Use the reusable cookie helper/constant from CRUISE-004 to enforce these attributes — never construct the Set-Cookie header manually in the handler.",
       "spawn_instance": "SPAWN-004B"
     },
     {
