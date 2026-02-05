@@ -13,7 +13,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "cd ../.. && DATABASE_PATH=test_e2e.db JWT_PUBLIC_KEY_PATH=certs/jwt-ca.pub cargo run",
+      "cd ../.. && DATABASE_PATH=test_e2e.db JWT_PUBLIC_KEY_PATH=certs/jwt-ca.pub ./target/debug/sqlite-editor",
     url: "http://127.0.0.1:3000/login",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
