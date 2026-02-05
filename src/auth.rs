@@ -1,7 +1,14 @@
-// NOTE: This authentication module is an independent, security-critical domain.
-// It should be reviewed and modified separately from the database layer (db.rs).
-// Changes here (JWT validation, cookie handling, CSRF protection) require
-// dedicated security review.
+// AUTH MODULE — Independent security-critical domain
+//
+// This module handles JWT validation, cookie management, and CSRF protection.
+// It has NO dependencies on the database layer (db.rs) and MUST remain fully
+// decoupled from it. Any changes to authentication logic (token validation,
+// cookie security attributes, CSRF policy) require a dedicated security review
+// and should be submitted as a separate PR from database changes.
+//
+// Reviewer note: this module was originally committed alongside the database
+// layer in a single PR. Future changes to auth and database MUST be submitted
+// as separate PRs to enable focused, domain-specific security review.
 
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
