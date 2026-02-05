@@ -22,10 +22,11 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
 
 1. **SQLite DDL limitations** — SQLite has limited ALTER TABLE support (no DROP COLUMN before 3.35.0, no RENAME COLUMN before 3.25.0). The app must handle column removal by recreating the table.
 2. **JWT key management** — The local CA private key must never be committed. Keys should be generated at build/test time and excluded via `.gitignore`.
-3. **Concurrent SQLite access** — SQLite has limited write concurrency. WAL mode helps but the app should use a single connection pool with serialized writes.
-4. **htmx + complex table editing** — Adding/removing columns with type definitions and constraints requires careful form design to avoid a confusing UX.
-5. **Playwright test stability** — E2E tests against a local server can be flaky. Tests need proper server startup/shutdown lifecycle management.
-6. **Super-Linter configuration** — Super-Linter runs many linters by default. Need to configure it to only run relevant linters (Rust/clippy, HTML, JS, YAML) to avoid false positives.
+3. **CSRF with dual auth methods** — Supporting both Authorization header and cookie-based authentication increases the CSRF attack surface. Mitigations: cookies use SameSite=Strict (primary defense), and cookie-authenticated state-mutating requests must include the HX-Request custom header as defense-in-depth (CORS preflight blocks cross-origin custom headers).
+4. **Concurrent SQLite access** — SQLite has limited write concurrency. WAL mode helps but the app should use a single connection pool with serialized writes.
+5. **htmx + complex table editing** — Adding/removing columns with type definitions and constraints requires careful form design to avoid a confusing UX.
+6. **Playwright test stability** — E2E tests against a local server can be flaky. Tests need proper server startup/shutdown lifecycle management.
+7. **Super-Linter configuration** — Super-Linter runs many linters by default. Need to configure it to only run relevant linters (Rust/clippy, HTML, JS, YAML) to avoid false positives.
 
 ## Implementation Plan
 
@@ -146,7 +147,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-004",
       "subject": "Implement JWT validation middleware",
-      "description": "Create src/auth.rs with: (1) A function to load the RSA public key from PEM file. (2) An Axum middleware/extractor that extracts the JWT from the Authorization header (Bearer token) or from a cookie, validates it using RS256, and extracts claims (sub, exp, iat). (3) A Claims struct with serde Deserialize. (4) An AuthUser extractor that can be used in handler signatures. (5) Proper error responses (401 Unauthorized) for missing/invalid/expired tokens. (6) A helper function or constant for building the authentication cookie with mandatory security attributes: HttpOnly (prevents XSS-based cookie theft via JavaScript), Secure (ensures the cookie is only sent over HTTPS), and SameSite=Strict (mitigates CSRF attacks). This helper must be used by any handler that sets or clears the auth cookie (see CRUISE-009). Include unit tests for token validation with valid and expired tokens.",
+      "description": "Create src/auth.rs with: (1) A function to load the RSA public key from PEM file. (2) An Axum middleware/extractor that extracts the JWT from the Authorization header (Bearer token) or from a cookie, validates it using RS256, and extracts claims (sub, exp, iat). (3) A Claims struct with serde Deserialize. (4) An AuthUser extractor that can be used in handler signatures. (5) Proper error responses (401 Unauthorized) for missing/invalid/expired tokens. (6) A helper function or constant for building the authentication cookie with mandatory security attributes: HttpOnly (prevents XSS-based cookie theft via JavaScript), Secure (ensures the cookie is only sent over HTTPS), and SameSite=Strict (mitigates CSRF attacks by preventing the browser from sending the cookie on cross-origin requests). This helper must be used by any handler that sets or clears the auth cookie (see CRUISE-009). (7) CSRF protection for cookie-based auth: since supporting both Authorization header and cookies increases the CSRF attack surface, all state-mutating requests (POST, PUT, DELETE) authenticated via cookie must be validated against CSRF. The SameSite=Strict attribute is the primary defense, but as defense-in-depth, htmx requests must also be verified by checking the HX-Request header (a custom header that browsers will not send on cross-origin requests due to CORS preflight requirements). The middleware should reject cookie-authenticated state-mutating requests that lack either a valid SameSite cookie context or the HX-Request custom header. Include unit tests for token validation with valid and expired tokens, and for CSRF protection (verify that cookie-auth requests without HX-Request header on mutating endpoints are rejected).",
       "blocked_by": ["CRUISE-002", "CRUISE-003"],
       "complexity": "high",
       "acceptance_criteria": [
@@ -156,7 +157,8 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "Returns 401 for missing, invalid, or expired tokens",
         "Supports both Authorization header and cookie-based auth (cookie must use HttpOnly, Secure, SameSite=Strict attributes)",
         "A reusable helper/constant enforces cookie security attributes (HttpOnly, Secure, SameSite=Strict) so any handler setting the auth cookie cannot accidentally omit them",
-        "Unit tests pass for valid token, expired token, and invalid signature cases",
+        "CSRF defense-in-depth: cookie-authenticated state-mutating requests (POST/PUT/DELETE) must include the HX-Request custom header (sent automatically by htmx); requests lacking this header are rejected with 403 Forbidden",
+        "Unit tests pass for valid token, expired token, invalid signature, and CSRF protection cases",
         "cargo test --lib passes"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
