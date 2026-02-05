@@ -154,7 +154,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "AuthUser extractor works in Axum handler signatures",
         "Validates RS256 tokens using the public key",
         "Returns 401 for missing, invalid, or expired tokens",
-        "Supports both Authorization header and cookie-based auth",
+        "Supports both Authorization header and cookie-based auth (cookie must use HttpOnly, Secure, SameSite=Strict attributes)",
         "Unit tests pass for valid token, expired token, and invalid signature cases",
         "cargo test --lib passes"
       ],
@@ -291,12 +291,13 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-009",
       "subject": "Implement HTML-serving route handlers",
-      "description": "Create src/views.rs with handlers that render MiniJinja templates and serve HTML pages: (1) GET / — redirect to /tables if authenticated, /login otherwise. (2) GET /login — render login page. (3) POST /login — accept token, set it as a cookie, redirect to /tables. (4) GET /tables — render tables list page. (5) GET /tables/:name — render table detail page. (6) POST /logout — clear auth cookie, redirect to /login. Implement htmx-aware responses: if the request has HX-Request header, return only the partial; otherwise return the full page. Wire these routes into the Axum router alongside the API routes.",
+      "description": "Create src/views.rs with handlers that render MiniJinja templates and serve HTML pages: (1) GET / — redirect to /tables if authenticated, /login otherwise. (2) GET /login — render login page. (3) POST /login — accept token, set it as an HttpOnly, Secure, SameSite=Strict cookie, redirect to /tables. (4) GET /tables — render tables list page. (5) GET /tables/:name — render table detail page. (6) POST /logout — clear auth cookie, redirect to /login. When setting the authentication cookie, always use security attributes: HttpOnly (prevent XSS-based access), Secure (HTTPS-only), and SameSite=Strict (CSRF mitigation). Implement htmx-aware responses: if the request has HX-Request header, return only the partial; otherwise return the full page. Wire these routes into the Axum router alongside the API routes.",
       "blocked_by": ["CRUISE-007A", "CRUISE-007B", "CRUISE-008B"],
       "complexity": "medium",
       "acceptance_criteria": [
         "All HTML-serving routes are implemented",
         "Login flow works: paste token -> set cookie -> redirect",
+        "Auth cookie is set with HttpOnly, Secure, and SameSite=Strict attributes",
         "Logout clears the auth cookie",
         "htmx requests receive partial responses",
         "Non-htmx requests receive full page responses",
