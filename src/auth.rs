@@ -1,3 +1,8 @@
+// NOTE: This authentication module is an independent, security-critical domain.
+// It should be reviewed and modified separately from the database layer (db.rs).
+// Changes here (JWT validation, cookie handling, CSRF protection) require
+// dedicated security review.
+
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::{header, Method, StatusCode};
