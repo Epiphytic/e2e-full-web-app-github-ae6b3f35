@@ -64,7 +64,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "use_spawn_team": false,
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-      "task_ids": ["CRUISE-008A", "CRUISE-008B", "CRUISE-009"]
+      "task_ids": ["CRUISE-008A", "CRUISE-008B", "CRUISE-008C", "CRUISE-009"]
     },
     {
       "id": "SPAWN-005",
@@ -308,17 +308,34 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     },
     {
       "id": "CRUISE-008B",
-      "subject": "Create database editor templates and htmx partials",
-      "description": "Create the remaining MiniJinja templates for the database editor UI: (1) table_detail.html — shows table schema and rows with edit/delete controls, extending base.html. (2) partials/table_list.html — htmx partial for table list updates. (3) partials/table_schema.html — htmx partial for schema display. (4) partials/row_list.html — htmx partial for row listing with pagination. (5) partials/add_column_form.html — htmx partial for adding a column (name, type, nullable, default). (6) partials/add_row_form.html — htmx partial for adding a row. Use htmx attributes (hx-get, hx-post, hx-delete, hx-target, hx-swap) for dynamic updates without full page reloads.",
-      "blocked_by": ["CRUISE-008A", "CRUISE-007B"],
+      "subject": "Create table detail template and table-level htmx partials",
+      "description": "Create the MiniJinja templates for table-level views in the database editor UI: (1) table_detail.html — shows table schema and rows with edit/delete controls, extending base.html. (2) partials/table_list.html — htmx partial for table list updates. (3) partials/table_schema.html — htmx partial for schema display. Use htmx attributes (hx-get, hx-post, hx-delete, hx-target, hx-swap) for dynamic updates without full page reloads.",
+      "blocked_by": ["CRUISE-008A", "CRUISE-007A"],
       "complexity": "medium",
       "acceptance_criteria": [
         "table_detail.html shows schema and rows with edit/delete controls",
-        "All partials exist in templates/partials/",
+        "partials/table_list.html exists for table list updates",
+        "partials/table_schema.html exists for schema display",
         "htmx partials enable dynamic updates without full page reloads",
-        "Forms use hx-post/hx-delete for AJAX submissions",
-        "Tables and rows update without full page reloads",
         "Partials are compatible with the base layout from CRUISE-008A"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-004"
+    },
+    {
+      "id": "CRUISE-008C",
+      "subject": "Create row-level htmx partials and form templates",
+      "description": "Create the MiniJinja templates for row-level views and data entry forms: (1) partials/row_list.html — htmx partial for row listing with pagination. (2) partials/add_column_form.html — htmx partial for adding a column (name, type, nullable, default). (3) partials/add_row_form.html — htmx partial for adding a row. Use htmx attributes (hx-get, hx-post, hx-delete, hx-target, hx-swap) for dynamic updates without full page reloads.",
+      "blocked_by": ["CRUISE-008B", "CRUISE-007B"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "partials/row_list.html exists for row listing with pagination",
+        "partials/add_column_form.html exists for adding a column",
+        "partials/add_row_form.html exists for adding a row",
+        "Forms use hx-post/hx-delete for AJAX submissions",
+        "Row list and forms update without full page reloads",
+        "Partials are compatible with the table detail template from CRUISE-008B"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
@@ -328,7 +345,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "id": "CRUISE-009",
       "subject": "Implement HTML-serving route handlers",
       "description": "Create src/views.rs with handlers that render MiniJinja templates and serve HTML pages: (1) GET / — redirect to /tables if authenticated, /login otherwise. (2) GET /login — render login page. (3) POST /login — accept token, set it as an HttpOnly, Secure, SameSite=Strict cookie, redirect to /tables. (4) GET /tables — render tables list page. (5) GET /tables/:name — render table detail page. (6) POST /logout — clear auth cookie, redirect to /login. When setting the authentication cookie, always use security attributes: HttpOnly (prevent XSS-based access), Secure (HTTPS-only), and SameSite=Strict (CSRF mitigation). Implement htmx-aware responses: if the request has HX-Request header, return only the partial; otherwise return the full page. Wire these routes into the Axum router alongside the API routes.",
-      "blocked_by": ["CRUISE-007A", "CRUISE-007B", "CRUISE-008B"],
+      "blocked_by": ["CRUISE-007A", "CRUISE-007B", "CRUISE-008C"],
       "complexity": "medium",
       "acceptance_criteria": [
         "All HTML-serving routes are implemented",
@@ -428,8 +445,9 @@ CRUISE-001 (.gitignore)
   │                 └── CRUISE-007B (Row Data API) ←── CRUISE-007A
   │                       │
   │     CRUISE-008A (Base/Auth templates) ←── CRUISE-007A
-  │           └── CRUISE-008B (DB Editor templates) ←── CRUISE-007B
-  │                 └── CRUISE-009 (View handlers)
+  │           └── CRUISE-008B (Table detail & table partials) ←── CRUISE-007A
+  │                 └── CRUISE-008C (Row partials & forms) ←── CRUISE-007B
+  │                       └── CRUISE-009 (View handlers)
   │                                   └── CRUISE-010 (Playwright setup)
   │                                         └── CRUISE-011 (E2E tests)
   │                                               └── CRUISE-012 (CI/CD)
@@ -444,7 +462,7 @@ CRUISE-001 (.gitignore)
 | SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
 | SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
 | SPAWN-003 | 006, 006A, 006B, 006C, 007A, 007B | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
-| SPAWN-004 | 008A, 008B, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
+| SPAWN-004 | 008A, 008B, 008C, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
 
