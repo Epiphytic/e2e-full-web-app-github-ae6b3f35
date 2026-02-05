@@ -56,7 +56,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "use_spawn_team": true,
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-      "task_ids": ["CRUISE-006", "CRUISE-006A", "CRUISE-006B", "CRUISE-007A", "CRUISE-007B"]
+      "task_ids": ["CRUISE-006", "CRUISE-006A", "CRUISE-006B", "CRUISE-006C", "CRUISE-007A", "CRUISE-007B"]
     },
     {
       "id": "SPAWN-004",
@@ -198,19 +198,36 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     },
     {
       "id": "CRUISE-006A",
-      "subject": "Table schema management operations",
-      "description": "Extend src/db.rs with table-level schema management operations: (1) Create a new table with a given name and column definitions (name, type, nullable, default). (2) Drop a table by name. (3) Get table schema/structure (column names, types, constraints). (4) Add a column to a table. (5) Remove a column from a table (using table recreation for SQLite < 3.35). (6) Rename a column. Use SQL parameter binding for all data values to prevent injection. Since DDL statements (CREATE TABLE, ALTER TABLE, DROP TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all table schema management operations.",
+      "subject": "Table-level schema operations (create, drop, get schema)",
+      "description": "Extend src/db.rs with table-level schema operations: (1) Create a new table with a given name and column definitions (name, type, nullable, default). (2) Drop a table by name. (3) Get table schema/structure (column names, types, constraints). Use SQL parameter binding for all data values to prevent injection. Since DDL statements (CREATE TABLE, DROP TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all table-level schema operations.",
       "blocked_by": ["CRUISE-006"],
-      "complexity": "high",
+      "complexity": "medium",
       "acceptance_criteria": [
         "Can create tables with column definitions (name, type, nullable, default)",
         "Can drop tables by name",
         "Can get table schema with column details",
-        "Can add, remove, and rename columns",
+        "All SQL data values use parameter binding (no string interpolation for values)",
+        "All SQL identifiers are validated using the identifier validation function from CRUISE-006 before interpolation into DDL statements",
+        "Unit tests pass for all table-level schema operations"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-003"
+    },
+    {
+      "id": "CRUISE-006C",
+      "subject": "Column-level schema operations (add, remove, rename)",
+      "description": "Extend src/db.rs with column-level schema operations: (1) Add a column to a table. (2) Remove a column from a table (using table recreation for SQLite < 3.35). (3) Rename a column. Use SQL parameter binding for all data values to prevent injection. Since DDL statements (ALTER TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all column-level schema operations, including the table recreation fallback for column removal.",
+      "blocked_by": ["CRUISE-006A"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "Can add a column to an existing table",
+        "Can remove a column from a table",
+        "Can rename a column",
         "Column removal works via table recreation for SQLite < 3.35",
         "All SQL data values use parameter binding (no string interpolation for values)",
         "All SQL identifiers are validated using the identifier validation function from CRUISE-006 before interpolation into DDL statements",
-        "Unit tests pass for all table schema management operations"
+        "Unit tests pass for all column-level schema operations, including table recreation fallback"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
@@ -240,7 +257,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "id": "CRUISE-007A",
       "subject": "Implement Table/Schema API route handlers",
       "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers for table and schema management: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
-      "blocked_by": ["CRUISE-004", "CRUISE-006A"],
+      "blocked_by": ["CRUISE-004", "CRUISE-006A", "CRUISE-006C"],
       "complexity": "medium",
       "acceptance_criteria": [
         "All table/schema API endpoints are implemented and wired to the router",
@@ -404,8 +421,9 @@ CRUISE-001 (.gitignore)
   │     ├── CRUISE-004 (JWT middleware) ─────────────────┐
   │     │     └── CRUISE-005 (.well-known)               │
   │     └── CRUISE-006 (DB init & connection mgmt)       │
-  │           ├── CRUISE-006A (Table schema mgmt)        │
-  │           │     └── CRUISE-007A (Table/Schema API) ←─┘
+  │           ├── CRUISE-006A (Table-level schema ops)   │
+  │           │     └── CRUISE-006C (Column-level ops)   │
+  │           │           └── CRUISE-007A (Table/Schema API) ←─┘
   │           └── CRUISE-006B (Row CRUD)
   │                 └── CRUISE-007B (Row Data API) ←── CRUISE-007A
   │                       │
@@ -425,7 +443,7 @@ CRUISE-001 (.gitignore)
 |----------|-------|-------------|----------------|
 | SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
 | SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
-| SPAWN-003 | 006, 006A, 006B, 007A, 007B | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
+| SPAWN-003 | 006, 006A, 006B, 006C, 007A, 007B | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
 | SPAWN-004 | 008A, 008B, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
