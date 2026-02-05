@@ -50,6 +50,8 @@
         <div class="nav-right">
             {% if user %}
             <span class="user-info">{{ user.username }}</span>
+            <!-- BUG FIX: Use standard form POST for logout instead of htmx to ensure
+                 reliable redirect behavior without JavaScript dependency -->
             <form method="post" action="/logout" style="display: inline;">
                 <button type="submit" class="btn btn-sm btn-danger">Logout</button>
             </form>
