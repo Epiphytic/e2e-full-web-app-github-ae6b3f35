@@ -181,7 +181,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006",
       "subject": "Database initialization and table management",
-      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) Create a new table with a given name and column definitions (name, type, nullable, default). (4) Drop a table by name. (5) Get table schema/structure (column names, types, constraints). (6) Add a column to a table. (7) Remove a column from a table (using table recreation for SQLite < 3.35). (8) Rename a column. Use proper SQL parameter binding to prevent injection. Table and column names must be validated/sanitized. Include unit tests for all database initialization and table management operations.",
+      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) Create a new table with a given name and column definitions (name, type, nullable, default). (4) Drop a table by name. (5) Get table schema/structure (column names, types, constraints). (6) Add a column to a table. (7) Remove a column from a table (using table recreation for SQLite < 3.35). (8) Rename a column. Use SQL parameter binding for all data values to prevent injection. Since DDL statements (CREATE TABLE, ALTER TABLE, DROP TABLE) do not support parameter binding for identifiers (table names, column names), all identifiers MUST be strictly validated against an allowlist regex (e.g., ^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings. Reject any identifier that does not match. Include unit tests for all database initialization and table management operations, including tests that verify identifier validation rejects malicious input.",
       "blocked_by": ["CRUISE-002"],
       "complexity": "high",
       "acceptance_criteria": [
@@ -190,8 +190,9 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "Can list tables, create tables, drop tables",
         "Can get table schema with column details",
         "Can add, remove, and rename columns",
-        "All SQL uses parameter binding (no string interpolation for values)",
-        "Table and column names are validated/sanitized to prevent SQL injection",
+        "All SQL data values use parameter binding (no string interpolation for values)",
+        "All SQL identifiers (table names, column names) are validated against an allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before interpolation into DDL statements, since SQL parameter binding does not support identifiers",
+        "Malicious identifier inputs (e.g., containing SQL injection attempts) are rejected with an error",
         "Unit tests pass for all table management operations"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
