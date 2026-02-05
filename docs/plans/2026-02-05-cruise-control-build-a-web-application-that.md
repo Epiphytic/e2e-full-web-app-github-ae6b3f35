@@ -56,7 +56,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "use_spawn_team": true,
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-      "task_ids": ["CRUISE-006", "CRUISE-006B", "CRUISE-007"]
+      "task_ids": ["CRUISE-006", "CRUISE-006B", "CRUISE-007A", "CRUISE-007B"]
     },
     {
       "id": "SPAWN-004",
@@ -217,18 +217,36 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "spawn_instance": "SPAWN-003"
     },
     {
-      "id": "CRUISE-007",
-      "subject": "Implement API route handlers",
-      "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. (7) GET /api/tables/:name/rows — list rows (with pagination). (8) POST /api/tables/:name/rows — insert a row. (9) PUT /api/tables/:name/rows/:id — update a row. (10) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
-      "blocked_by": ["CRUISE-004", "CRUISE-006", "CRUISE-006B"],
-      "complexity": "high",
+      "id": "CRUISE-007A",
+      "subject": "Implement Table/Schema API route handlers",
+      "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers for table and schema management: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
+      "blocked_by": ["CRUISE-004", "CRUISE-006"],
+      "complexity": "medium",
       "acceptance_criteria": [
-        "All API endpoints are implemented and wired to the router",
+        "All table/schema API endpoints are implemented and wired to the router",
         "All endpoints require authentication",
         "Endpoints return appropriate HTTP status codes",
         "Error responses include meaningful messages",
         "Table name and column name inputs are validated",
-        "Integration tests pass for all CRUD operations"
+        "Integration tests pass for table and schema CRUD operations"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-003"
+    },
+    {
+      "id": "CRUISE-007B",
+      "subject": "Implement Row Data API route handlers",
+      "description": "Extend src/routes.rs (or src/routes/ module) with Axum handlers for row-level data operations: (1) GET /api/tables/:name/rows — list rows (with pagination). (2) POST /api/tables/:name/rows — insert a row. (3) PUT /api/tables/:name/rows/:id — update a row. (4) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
+      "blocked_by": ["CRUISE-007A", "CRUISE-006B"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "All row data API endpoints are implemented and wired to the router",
+        "All endpoints require authentication",
+        "Endpoints return appropriate HTTP status codes",
+        "Pagination works correctly with offset/limit parameters",
+        "Error responses include meaningful messages",
+        "Integration tests pass for row CRUD operations"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
@@ -238,7 +256,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "id": "CRUISE-008",
       "subject": "Create HTML templates with htmx",
       "description": "Create templates/ directory with MiniJinja templates: (1) base.html — base layout with htmx script tag, navigation, CSS. (2) login.html — login page with a form that accepts a JWT token (paste-based for simplicity). (3) tables.html — main page listing all tables with create/delete buttons. (4) table_detail.html — shows table schema and rows with edit/delete controls. (5) partials/table_list.html — htmx partial for table list updates. (6) partials/table_schema.html — htmx partial for schema display. (7) partials/row_list.html — htmx partial for row listing. (8) partials/add_column_form.html — htmx partial for adding a column. (9) partials/add_row_form.html — htmx partial for adding a row. Use htmx attributes (hx-get, hx-post, hx-delete, hx-target, hx-swap) for dynamic updates without full page reloads.",
-      "blocked_by": ["CRUISE-007"],
+      "blocked_by": ["CRUISE-007A", "CRUISE-007B"],
       "complexity": "high",
       "acceptance_criteria": [
         "All template files exist in templates/",
@@ -258,7 +276,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "id": "CRUISE-009",
       "subject": "Implement HTML-serving route handlers",
       "description": "Create src/views.rs with handlers that render MiniJinja templates and serve HTML pages: (1) GET / — redirect to /tables if authenticated, /login otherwise. (2) GET /login — render login page. (3) POST /login — accept token, set it as a cookie, redirect to /tables. (4) GET /tables — render tables list page. (5) GET /tables/:name — render table detail page. (6) POST /logout — clear auth cookie, redirect to /login. Implement htmx-aware responses: if the request has HX-Request header, return only the partial; otherwise return the full page. Wire these routes into the Axum router alongside the API routes.",
-      "blocked_by": ["CRUISE-007", "CRUISE-008"],
+      "blocked_by": ["CRUISE-007A", "CRUISE-007B", "CRUISE-008"],
       "complexity": "medium",
       "acceptance_criteria": [
         "All HTML-serving routes are implemented",
@@ -347,16 +365,17 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
 ```
 CRUISE-001 (.gitignore)
   ├── CRUISE-002 (Cargo.toml & project init)
-  │     ├── CRUISE-004 (JWT middleware) ──┐
-  │     │     └── CRUISE-005 (.well-known) │
-  │     └── CRUISE-006 (DB init & table mgmt) │
-  │           └── CRUISE-006B (Row CRUD)      │
-  │                 └── CRUISE-007 (API routes) ←┘
-  │                 └── CRUISE-008 (HTML templates)
-  │                       └── CRUISE-009 (View handlers)
-  │                             └── CRUISE-010 (Playwright setup)
-  │                                   └── CRUISE-011 (E2E tests)
-  │                                         └── CRUISE-012 (CI/CD)
+  │     ├── CRUISE-004 (JWT middleware) ────────────┐
+  │     │     └── CRUISE-005 (.well-known)          │
+  │     └── CRUISE-006 (DB init & table mgmt)       │
+  │           ├── CRUISE-007A (Table/Schema API) ←──┘
+  │           └── CRUISE-006B (Row CRUD)
+  │                 └── CRUISE-007B (Row Data API) ←── CRUISE-007A
+  │                       └── CRUISE-008 (HTML templates) ←── CRUISE-007A
+  │                             └── CRUISE-009 (View handlers)
+  │                                   └── CRUISE-010 (Playwright setup)
+  │                                         └── CRUISE-011 (E2E tests)
+  │                                               └── CRUISE-012 (CI/CD)
   └── CRUISE-003 (Key generation scripts)
         └── CRUISE-004 (JWT middleware)
 ```
@@ -367,7 +386,7 @@ CRUISE-001 (.gitignore)
 |----------|-------|-------------|----------------|
 | SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
 | SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
-| SPAWN-003 | 006, 006B, 007 | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
+| SPAWN-003 | 006, 006B, 007A, 007B | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
 | SPAWN-004 | 008, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
