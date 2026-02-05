@@ -1,0 +1,407 @@
+# Plan: SQLite Database Editor Web Application
+
+## Overview
+
+Build a Rust web application that provides a browser-based UI for editing SQLite databases. The application uses Axum as the web framework, htmx for the interactive frontend, JWT (RS256) authentication with a local Certificate Authority, and Playwright for end-to-end testing.
+
+**Architecture Summary:**
+- **Backend**: Rust + Axum 0.8, serving both API endpoints and HTML templates
+- **Database**: SQLite via `rusqlite` (simpler for direct DDL operations like ALTER TABLE)
+- **Auth**: RS256 JWT with a local CA — the app validates tokens but does not issue them. A CLI tool or script generates tokens for testing. A `.well-known/jwks.json` endpoint exposes the public key.
+- **Frontend**: Server-rendered HTML with htmx for dynamic interactions. MiniJinja templates for rendering.
+- **Testing**: Playwright (Node.js) E2E tests run against the compiled binary
+- **CI/CD**: GitHub Actions with Super-Linter and dependency-review-action
+
+**Key Design Decisions:**
+1. **rusqlite over sqlx** — DDL operations (CREATE TABLE, ALTER TABLE, DROP TABLE) are not well-suited to sqlx's compile-time query checking. rusqlite gives direct control over raw SQL needed for schema manipulation.
+2. **External token generation** — The app only validates JWTs, keeping auth simple. A script generates short-lived tokens for testing.
+3. **MiniJinja** — Interpreted templates with hot-reload support, Jinja2 syntax, and `render_block` for htmx partial responses.
+4. **Playwright in Node.js** — The Node.js Playwright ecosystem is far more mature than Rust ports. Tests live in a `tests/e2e/` directory with their own `package.json`.
+
+## Risk Areas
+
+1. **SQLite DDL limitations** — SQLite has limited ALTER TABLE support (no DROP COLUMN before 3.35.0, no RENAME COLUMN before 3.25.0). The app must handle column removal by recreating the table.
+2. **JWT key management** — The local CA private key must never be committed. Keys should be generated at build/test time and excluded via `.gitignore`.
+3. **Concurrent SQLite access** — SQLite has limited write concurrency. WAL mode helps but the app should use a single connection pool with serialized writes.
+4. **htmx + complex table editing** — Adding/removing columns with type definitions and constraints requires careful form design to avoid a confusing UX.
+5. **Playwright test stability** — E2E tests against a local server can be flaky. Tests need proper server startup/shutdown lifecycle management.
+6. **Super-Linter configuration** — Super-Linter runs many linters by default. Need to configure it to only run relevant linters (Rust/clippy, HTML, JS, YAML) to avoid false positives.
+
+## Implementation Plan
+
+```json
+{
+  "title": "SQLite Database Editor Web Application",
+  "overview": "Rust/Axum web app with htmx frontend for editing SQLite databases, JWT RS256 auth with local CA, Playwright E2E tests, and GitHub Actions CI/CD",
+  "spawn_instances": [
+    {
+      "id": "SPAWN-001",
+      "name": "Project Foundation & Configuration",
+      "use_spawn_team": false,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-001", "CRUISE-002", "CRUISE-003"]
+    },
+    {
+      "id": "SPAWN-002",
+      "name": "JWT Authentication & Crypto",
+      "use_spawn_team": true,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-004", "CRUISE-005"]
+    },
+    {
+      "id": "SPAWN-003",
+      "name": "Database Layer & API",
+      "use_spawn_team": true,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-006", "CRUISE-007"]
+    },
+    {
+      "id": "SPAWN-004",
+      "name": "Frontend Templates & htmx",
+      "use_spawn_team": false,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-008", "CRUISE-009"]
+    },
+    {
+      "id": "SPAWN-005",
+      "name": "E2E Testing with Playwright",
+      "use_spawn_team": true,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "task_ids": ["CRUISE-010", "CRUISE-011"]
+    },
+    {
+      "id": "SPAWN-006",
+      "name": "CI/CD Pipeline",
+      "use_spawn_team": false,
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Glob,Grep --timeout 180",
+      "permissions": ["Read", "Write", "Edit", "Glob", "Grep"],
+      "task_ids": ["CRUISE-012"]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "CRUISE-001",
+      "subject": "Set up .gitignore for the entire project",
+      "description": "Create a comprehensive .gitignore that excludes: Rust build artifacts (target/), SQLite database files (*.db, *.sqlite, *.sqlite3), private keys and certificates (*.pem, *.key, *.crt, *.p12, certs/), environment files (.env, .env.*), Node.js dependencies (node_modules/), Playwright artifacts (test-results/, playwright-report/), editor/IDE files (.vscode/, .idea/, *.swp, *.swo, *~, .DS_Store), OS files (Thumbs.db, Desktop.ini, .DS_Store), log files (*.log, logs/), .fork-join directories, and temporary files (tmp/, *.tmp).",
+      "blocked_by": [],
+      "complexity": "low",
+      "acceptance_criteria": [
+        ".gitignore file exists at project root",
+        "Covers Rust build artifacts (target/)",
+        "Covers private keys (*.pem, *.key, *.crt, certs/private/)",
+        "Covers SQLite files (*.db, *.sqlite, *.sqlite3)",
+        "Covers Node.js (node_modules/)",
+        "Covers Playwright output (test-results/, playwright-report/)",
+        "Covers environment files (.env, .env.*)",
+        "Covers editor/IDE files (.vscode/, .idea/, *.swp, etc.)",
+        "Covers OS files (.DS_Store, Thumbs.db, Desktop.ini)",
+        "Covers log files (*.log, logs/)",
+        "Covers .fork-join directories",
+        "Covers temporary files (tmp/, *.tmp)"
+      ],
+      "permissions": ["Read", "Write", "Edit"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit",
+      "spawn_instance": "SPAWN-001"
+    },
+    {
+      "id": "CRUISE-002",
+      "subject": "Initialize Rust project with Cargo.toml and dependencies",
+      "description": "Create the Cargo.toml with all required dependencies: axum 0.8 (with macros feature), tokio (full features), rusqlite (with bundled feature for portable SQLite), jsonwebtoken (with aws_lc_rs or ring backend), minijinja (with loader feature), serde/serde_json, tower-http (cors, static file serving), tracing/tracing-subscriber for logging. Set up the basic src/ directory structure: main.rs, lib.rs, config.rs. The main.rs should have a skeleton that initializes logging, loads config, and starts the Axum server.",
+      "blocked_by": ["CRUISE-001"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "Cargo.toml exists with all required dependencies",
+        "src/main.rs compiles and starts a basic Axum server",
+        "src/lib.rs exists as the library root",
+        "src/config.rs handles server configuration (port, database path, JWT public key path)",
+        "cargo build succeeds without errors",
+        "cargo clippy passes"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash",
+      "spawn_instance": "SPAWN-001"
+    },
+    {
+      "id": "CRUISE-003",
+      "subject": "Create JWT key generation script and .well-known endpoint",
+      "description": "Create a script (scripts/generate-keys.sh) that generates an RSA 2048-bit key pair using openssl: a private key (certs/private/jwt-ca.key) and a self-signed certificate (certs/jwt-ca.crt). Also extract the public key in PEM format (certs/jwt-ca.pub). Create a script (scripts/generate-token.sh) that takes a username and expiry as arguments and generates a signed JWT token using the private key (for testing purposes). The certs/private/ directory should be in .gitignore. Create a certs/.gitkeep to ensure the directory structure exists.",
+      "blocked_by": ["CRUISE-001"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "scripts/generate-keys.sh creates RSA key pair",
+        "scripts/generate-token.sh creates a valid JWT with configurable username and expiry",
+        "certs/private/ is excluded by .gitignore",
+        "Generated tokens can be verified using the public key",
+        "Scripts are executable (chmod +x)"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash",
+      "spawn_instance": "SPAWN-001"
+    },
+    {
+      "id": "CRUISE-004",
+      "subject": "Implement JWT validation middleware",
+      "description": "Create src/auth.rs with: (1) A function to load the RSA public key from PEM file. (2) An Axum middleware/extractor that extracts the JWT from the Authorization header (Bearer token) or from a cookie, validates it using RS256, and extracts claims (sub, exp, iat). (3) A Claims struct with serde Deserialize. (4) An AuthUser extractor that can be used in handler signatures. (5) Proper error responses (401 Unauthorized) for missing/invalid/expired tokens. Include unit tests for token validation with valid and expired tokens.",
+      "blocked_by": ["CRUISE-002", "CRUISE-003"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "src/auth.rs exists with JWT validation logic",
+        "AuthUser extractor works in Axum handler signatures",
+        "Validates RS256 tokens using the public key",
+        "Returns 401 for missing, invalid, or expired tokens",
+        "Supports both Authorization header and cookie-based auth",
+        "Unit tests pass for valid token, expired token, and invalid signature cases",
+        "cargo test --lib passes"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-002"
+    },
+    {
+      "id": "CRUISE-005",
+      "subject": "Implement .well-known/jwks.json endpoint",
+      "description": "Create a handler that serves the public key in JWKS (JSON Web Key Set) format at /.well-known/jwks.json. The endpoint should read the RSA public key and convert it to JWK format with the correct kid, kty, alg, use, n, and e fields. This endpoint should be publicly accessible (no auth required). Add it to the Axum router.",
+      "blocked_by": ["CRUISE-004"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "GET /.well-known/jwks.json returns valid JWKS JSON",
+        "Response includes kty=RSA, alg=RS256, use=sig, and correct n/e values",
+        "Endpoint is publicly accessible without authentication",
+        "Response has correct Content-Type: application/json header"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-002"
+    },
+    {
+      "id": "CRUISE-006",
+      "subject": "Implement SQLite database layer for table management",
+      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) Create a new table with a given name and column definitions (name, type, nullable, default). (4) Drop a table by name. (5) Get table schema/structure (column names, types, constraints). (6) Add a column to a table. (7) Remove a column from a table (using table recreation for SQLite < 3.35). (8) Rename a column. (9) Basic CRUD for rows: list rows, insert row, update row, delete row. Use proper SQL parameter binding to prevent injection. Include unit tests for the database operations.",
+      "blocked_by": ["CRUISE-002"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "src/db.rs exists with all database operations",
+        "Can list tables, create tables, drop tables",
+        "Can get table schema with column details",
+        "Can add, remove, and rename columns",
+        "Can perform row CRUD operations",
+        "All SQL uses parameter binding (no string interpolation for values)",
+        "Table and column names are validated/sanitized to prevent SQL injection",
+        "Unit tests pass for all operations",
+        "WAL mode is enabled for better concurrent access"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-003"
+    },
+    {
+      "id": "CRUISE-007",
+      "subject": "Implement API route handlers",
+      "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. (7) GET /api/tables/:name/rows — list rows (with pagination). (8) POST /api/tables/:name/rows — insert a row. (9) PUT /api/tables/:name/rows/:id — update a row. (10) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
+      "blocked_by": ["CRUISE-004", "CRUISE-006"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "All API endpoints are implemented and wired to the router",
+        "All endpoints require authentication",
+        "Endpoints return appropriate HTTP status codes",
+        "Error responses include meaningful messages",
+        "Table name and column name inputs are validated",
+        "Integration tests pass for all CRUD operations"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-003"
+    },
+    {
+      "id": "CRUISE-008",
+      "subject": "Create HTML templates with htmx",
+      "description": "Create templates/ directory with MiniJinja templates: (1) base.html — base layout with htmx script tag, navigation, CSS. (2) login.html — login page with a form that accepts a JWT token (paste-based for simplicity). (3) tables.html — main page listing all tables with create/delete buttons. (4) table_detail.html — shows table schema and rows with edit/delete controls. (5) partials/table_list.html — htmx partial for table list updates. (6) partials/table_schema.html — htmx partial for schema display. (7) partials/row_list.html — htmx partial for row listing. (8) partials/add_column_form.html — htmx partial for adding a column. (9) partials/add_row_form.html — htmx partial for adding a row. Use htmx attributes (hx-get, hx-post, hx-delete, hx-target, hx-swap) for dynamic updates without full page reloads.",
+      "blocked_by": ["CRUISE-007"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "All template files exist in templates/",
+        "Base layout includes htmx CDN script",
+        "Login page accepts JWT token input",
+        "Tables page lists all tables with create/delete actions",
+        "Table detail page shows schema and rows",
+        "htmx partials enable dynamic updates",
+        "Forms use hx-post/hx-delete for AJAX submissions",
+        "Tables and rows update without full page reloads"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-004"
+    },
+    {
+      "id": "CRUISE-009",
+      "subject": "Implement HTML-serving route handlers",
+      "description": "Create src/views.rs with handlers that render MiniJinja templates and serve HTML pages: (1) GET / — redirect to /tables if authenticated, /login otherwise. (2) GET /login — render login page. (3) POST /login — accept token, set it as a cookie, redirect to /tables. (4) GET /tables — render tables list page. (5) GET /tables/:name — render table detail page. (6) POST /logout — clear auth cookie, redirect to /login. Implement htmx-aware responses: if the request has HX-Request header, return only the partial; otherwise return the full page. Wire these routes into the Axum router alongside the API routes.",
+      "blocked_by": ["CRUISE-007", "CRUISE-008"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "All HTML-serving routes are implemented",
+        "Login flow works: paste token -> set cookie -> redirect",
+        "Logout clears the auth cookie",
+        "htmx requests receive partial responses",
+        "Non-htmx requests receive full page responses",
+        "Unauthenticated users are redirected to /login",
+        "The application compiles and runs end-to-end"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-004"
+    },
+    {
+      "id": "CRUISE-010",
+      "subject": "Set up Playwright E2E test infrastructure",
+      "description": "Create tests/e2e/ directory with: (1) package.json with @playwright/test dependency. (2) playwright.config.ts configured to start the Rust server (cargo run) as a webServer before tests, with proper startup detection. (3) A test helper/fixture that generates a short-lived JWT token using the scripts/generate-token.sh script. (4) Global setup that ensures keys exist (runs generate-keys.sh if needed) and builds the Rust binary. (5) A .npmrc or configuration to store Playwright browsers locally.",
+      "blocked_by": ["CRUISE-009"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "tests/e2e/package.json exists with Playwright dependency",
+        "playwright.config.ts starts the Rust server automatically",
+        "Test fixture can generate valid JWT tokens",
+        "Global setup ensures keys and binary exist",
+        "npx playwright test runs without configuration errors"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-005"
+    },
+    {
+      "id": "CRUISE-011",
+      "subject": "Write Playwright E2E tests",
+      "description": "Create E2E test files in tests/e2e/: (1) auth.spec.ts — test login with a valid short-lived JWT token, verify redirect to tables page, test that expired tokens are rejected, test logout. (2) tables.spec.ts — test creating a new table with specified columns, verify table appears in list, test deleting a table, verify table is removed from list. (3) schema.spec.ts — test adding a column to an existing table, test removing a column, test that column changes are reflected in the table detail view. All tests should generate test results in JUnit XML format for CI reporting.",
+      "blocked_by": ["CRUISE-010"],
+      "complexity": "high",
+      "acceptance_criteria": [
+        "auth.spec.ts tests login, expired token rejection, and logout",
+        "tables.spec.ts tests creating and deleting tables",
+        "schema.spec.ts tests adding and removing columns",
+        "All tests pass when run with npx playwright test",
+        "Test results are output in JUnit XML format",
+        "Tests use short-lived tokens (< 5 minute expiry)",
+        "Tests clean up after themselves (delete test tables)"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-005"
+    },
+    {
+      "id": "CRUISE-012",
+      "subject": "Create GitHub Actions CI/CD workflows",
+      "description": "Create .github/workflows/ with: (1) lint.yml — runs on all PRs, uses github/super-linter with configuration to run clippy for Rust, eslint for JS/TS, htmlhint for HTML, yamllint for YAML. Disable linters that are not relevant. (2) dependency-review.yml — runs on all PRs, uses actions/dependency-review-action to check for vulnerable dependencies in both Cargo.lock and package-lock.json. (3) test.yml — runs on all PRs, builds the Rust project, runs cargo test, sets up Node.js, installs Playwright, runs E2E tests, uploads test results as artifacts. Ensure all workflows trigger on pull_request events targeting main.",
+      "blocked_by": ["CRUISE-011"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        ".github/workflows/lint.yml exists and uses github/super-linter",
+        ".github/workflows/dependency-review.yml exists and uses actions/dependency-review-action",
+        ".github/workflows/test.yml exists and runs both cargo test and Playwright tests",
+        "All workflows trigger on pull_request to main",
+        "Super-Linter is configured to only run relevant linters",
+        "Test results are uploaded as artifacts",
+        "Workflows use appropriate caching (cargo, npm)"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Glob,Grep",
+      "spawn_instance": "SPAWN-006"
+    }
+  ],
+  "risks": [
+    "SQLite ALTER TABLE limitations — DROP COLUMN only available in SQLite >= 3.35.0. The app must implement table recreation as a fallback for older versions, which is complex and error-prone.",
+    "JWT key management — Private keys must never be committed. Test scripts must generate keys on-demand and .gitignore must be set up before any keys are created.",
+    "Concurrent write access to SQLite — Multiple simultaneous writes can cause SQLITE_BUSY errors. WAL mode and a connection pool with serialized writes mitigate this.",
+    "htmx partial rendering complexity — Serving both full pages and htmx partials from the same handlers requires careful template design and HX-Request header detection.",
+    "Playwright test flakiness — Tests depend on the Rust server starting successfully. The playwright.config.ts webServer configuration must have proper health checks and timeouts.",
+    "Super-Linter false positives — Super-Linter runs many linters by default. Without proper configuration, it may flag legitimate code patterns. Must disable irrelevant linters.",
+    "Cross-platform build differences — rusqlite with bundled SQLite may have different behavior on CI (Linux) vs local development (macOS). The bundled feature helps but version differences can still occur.",
+    "Token-paste login UX — Having users paste JWT tokens is not a standard login flow. The UI must clearly explain the workflow and provide good error messages for invalid tokens."
+  ]
+}
+```
+
+## Dependency Graph
+
+```
+CRUISE-001 (.gitignore)
+  ├── CRUISE-002 (Cargo.toml & project init)
+  │     ├── CRUISE-004 (JWT middleware) ──┐
+  │     │     └── CRUISE-005 (.well-known) │
+  │     └── CRUISE-006 (Database layer)   │
+  │           └── CRUISE-007 (API routes) ←┘
+  │                 └── CRUISE-008 (HTML templates)
+  │                       └── CRUISE-009 (View handlers)
+  │                             └── CRUISE-010 (Playwright setup)
+  │                                   └── CRUISE-011 (E2E tests)
+  │                                         └── CRUISE-012 (CI/CD)
+  └── CRUISE-003 (Key generation scripts)
+        └── CRUISE-004 (JWT middleware)
+```
+
+## Spawn Instance Grouping Rationale
+
+| Instance | Tasks | Why Grouped | Why spawn_team |
+|----------|-------|-------------|----------------|
+| SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
+| SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
+| SPAWN-003 | 006, 007 | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
+| SPAWN-004 | 008, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
+| SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
+| SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
+
+## File Structure
+
+```
+.
+├── .github/
+│   └── workflows/
+│       ├── lint.yml
+│       ├── dependency-review.yml
+│       └── test.yml
+├── .gitignore
+├── Cargo.toml
+├── Cargo.lock
+├── scripts/
+│   ├── generate-keys.sh
+│   └── generate-token.sh
+├── certs/
+│   ├── .gitkeep
+│   ├── jwt-ca.crt          (generated, gitignored)
+│   ├── jwt-ca.pub          (generated, gitignored)
+│   └── private/
+│       └── jwt-ca.key      (generated, gitignored)
+├── src/
+│   ├── main.rs
+│   ├── lib.rs
+│   ├── config.rs
+│   ├── auth.rs
+│   ├── db.rs
+│   ├── routes.rs
+│   └── views.rs
+├── templates/
+│   ├── base.html
+│   ├── login.html
+│   ├── tables.html
+│   ├── table_detail.html
+│   └── partials/
+│       ├── table_list.html
+│       ├── table_schema.html
+│       ├── row_list.html
+│       ├── add_column_form.html
+│       └── add_row_form.html
+├── tests/
+│   └── e2e/
+│       ├── package.json
+│       ├── playwright.config.ts
+│       ├── auth.spec.ts
+│       ├── tables.spec.ts
+│       └── schema.spec.ts
+└── docs/
+    └── plans/
+        └── 2026-02-05-cruise-control-build-a-web-application-that.md
+```
