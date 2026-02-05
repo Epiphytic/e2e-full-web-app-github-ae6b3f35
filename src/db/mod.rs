@@ -1,3 +1,8 @@
+//! Database layer split into submodules for review granularity:
+//! - `tables`: Table-level schema operations (CRUISE-006A)
+//! - `columns`: Column-level schema operations (CRUISE-006C)
+//! - `rows`: Row-level CRUD operations (CRUISE-006B)
+
 mod columns;
 mod rows;
 mod tables;
