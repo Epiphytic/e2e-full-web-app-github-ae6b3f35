@@ -146,7 +146,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-004",
       "subject": "Implement JWT validation middleware",
-      "description": "Create src/auth.rs with: (1) A function to load the RSA public key from PEM file. (2) An Axum middleware/extractor that extracts the JWT from the Authorization header (Bearer token) or from a cookie, validates it using RS256, and extracts claims (sub, exp, iat). (3) A Claims struct with serde Deserialize. (4) An AuthUser extractor that can be used in handler signatures. (5) Proper error responses (401 Unauthorized) for missing/invalid/expired tokens. Include unit tests for token validation with valid and expired tokens.",
+      "description": "Create src/auth.rs with: (1) A function to load the RSA public key from PEM file. (2) An Axum middleware/extractor that extracts the JWT from the Authorization header (Bearer token) or from a cookie, validates it using RS256, and extracts claims (sub, exp, iat). (3) A Claims struct with serde Deserialize. (4) An AuthUser extractor that can be used in handler signatures. (5) Proper error responses (401 Unauthorized) for missing/invalid/expired tokens. (6) A helper function or constant for building the authentication cookie with mandatory security attributes: HttpOnly (prevents XSS-based cookie theft via JavaScript), Secure (ensures the cookie is only sent over HTTPS), and SameSite=Strict (mitigates CSRF attacks). This helper must be used by any handler that sets or clears the auth cookie (see CRUISE-009). Include unit tests for token validation with valid and expired tokens.",
       "blocked_by": ["CRUISE-002", "CRUISE-003"],
       "complexity": "high",
       "acceptance_criteria": [
@@ -155,6 +155,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "Validates RS256 tokens using the public key",
         "Returns 401 for missing, invalid, or expired tokens",
         "Supports both Authorization header and cookie-based auth (cookie must use HttpOnly, Secure, SameSite=Strict attributes)",
+        "A reusable helper/constant enforces cookie security attributes (HttpOnly, Secure, SameSite=Strict) so any handler setting the auth cookie cannot accidentally omit them",
         "Unit tests pass for valid token, expired token, and invalid signature cases",
         "cargo test --lib passes"
       ],
