@@ -1,9 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import { ensureKeysExist, generateToken } from "./helpers";
-
-test.beforeAll(() => {
-  ensureKeysExist();
-});
+import { generateToken } from "./helpers";
 
 let tableCounter = 0;
 

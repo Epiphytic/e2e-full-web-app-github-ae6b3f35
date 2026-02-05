@@ -1,15 +1,11 @@
 import { test, expect, Page } from "@playwright/test";
-import { ensureKeysExist, generateToken } from "./helpers";
+import { generateToken } from "./helpers";
 
 let tableCounter = 0;
 function uniqueTableName(): string {
   tableCounter++;
   return `table_test_${Date.now()}_${tableCounter}`;
 }
-
-test.beforeAll(() => {
-  ensureKeysExist();
-});
 
 async function loginAndGoToTables(page: Page): Promise<void> {
   const token = generateToken("testuser", 300);

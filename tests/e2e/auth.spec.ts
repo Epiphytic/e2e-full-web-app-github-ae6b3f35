@@ -1,9 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { ensureKeysExist, generateToken, generateExpiredToken } from "./helpers";
-
-test.beforeAll(() => {
-  ensureKeysExist();
-});
+import { generateToken, generateExpiredToken } from "./helpers";
 
 test.describe("Authentication", () => {
   test("should show login page when not authenticated", async ({ page }) => {
