@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SQLite Editor{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        nav { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        nav a { color: white; text-decoration: none; font-weight: bold; font-size: 1.2rem; }
+        nav .nav-right { display: flex; align-items: center; gap: 1rem; }
+        nav .user-info { font-size: 0.9rem; opacity: 0.8; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .card h2 { margin-bottom: 1rem; color: #2c3e50; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+        tr:hover { background: #f8f9fa; }
+        .btn { display: inline-block; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; text-decoration: none; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+        input, select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; }
+        input:focus, select:focus { outline: none; border-color: #3498db; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.25rem; font-weight: 600; color: #555; }
+        .form-row { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 120px; }
+        .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+        .alert-error { background: #fdecea; color: #b71c1c; border: 1px solid #f5c6cb; }
+        .alert-success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+        .pagination { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; }
+        .empty-state { text-align: center; padding: 3rem; color: #999; }
+        .actions { display: flex; gap: 0.5rem; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline; }
+        .htmx-request.htmx-indicator { display: inline; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/tables">SQLite Editor</a>
+        <div class="nav-right">
+            {% if user %}
+            <span class="user-info">{{ user.username }}</span>
+            <button class="btn btn-sm btn-danger"
+                    hx-post="/logout"
+                    hx-headers='{"HX-Request": "true"}'
+                    hx-redirect="/login">Logout</button>
+            {% endif %}
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

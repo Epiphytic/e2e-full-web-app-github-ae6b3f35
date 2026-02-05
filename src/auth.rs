@@ -1,4 +1,4 @@
-use axum::extract::FromRequestParts;
+use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum::http::{header, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
@@ -140,13 +140,19 @@ fn has_hx_request_header(parts: &Parts) -> bool {
         .is_some_and(|v| v == "true")
 }
 
-impl FromRequestParts<crate::app::AppState> for AuthUser {
+impl<S> FromRequestParts<S> for AuthUser
+where
+    S: Send + Sync,
+    crate::app::AppState: axum::extract::FromRef<S>,
+{
     type Rejection = AuthError;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &crate::app::AppState,
+        state: &S,
     ) -> Result<Self, Self::Rejection> {
+        let app_state = crate::app::AppState::from_ref(state);
+
         // Try Authorization header first, then cookie
         let (token, from_cookie) = if let Some(token) = extract_bearer_token(parts) {
             (token, false)
@@ -165,7 +171,7 @@ impl FromRequestParts<crate::app::AppState> for AuthUser {
             return Err(AuthError::CsrfRejected);
         }
 
-        let claims = state
+        let claims = app_state
             .jwt_validator
             .validate_token(&token)
             .map_err(|e| AuthError::InvalidToken(e.to_string()))?;

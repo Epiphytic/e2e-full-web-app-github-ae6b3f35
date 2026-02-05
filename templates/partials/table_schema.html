@@ -1,0 +1,36 @@
+{% if columns is defined and columns|length > 0 %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Not Null</th>
+            <th>Default</th>
+            <th>PK</th>
+            <th style="width: 80px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for col in columns %}
+        <tr>
+            <td>{{ col.name }}</td>
+            <td>{{ col.col_type }}</td>
+            <td>{{ "Yes" if col.notnull else "No" }}</td>
+            <td>{{ col.default_value if col.default_value else "-" }}</td>
+            <td>{{ "Yes" if col.pk else "No" }}</td>
+            <td>
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/api/tables/{{ table_name }}/columns/{{ col.name }}"
+                        hx-headers='{"HX-Request": "true"}'
+                        hx-confirm="Remove column '{{ col.name }}'?"
+                        hx-on::after-request="if(event.detail.successful) window.location.reload();">
+                    Remove
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color: #999;">No columns defined.</p>
+{% endif %}

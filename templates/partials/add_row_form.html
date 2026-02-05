@@ -1,0 +1,41 @@
+<div style="padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+    <h4 style="margin-bottom: 0.75rem;">Add Row</h4>
+    <form id="add-row-form">
+        {% if schema_columns is defined %}
+        {% for col in schema_columns %}
+        <div class="form-group">
+            <label>{{ col.name }} ({{ col.col_type }})</label>
+            <input type="text" data-col-name="{{ col.name }}"
+                   placeholder="{{ col.col_type }}"
+                   style="width: 100%;">
+        </div>
+        {% endfor %}
+        {% endif %}
+        <button type="submit" class="btn btn-success">Insert Row</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('add-row-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = e.target;
+    var inputs = form.querySelectorAll('[data-col-name]');
+    var data = {};
+    inputs.forEach(function(input) {
+        if (input.value !== '') {
+            data[input.getAttribute('data-col-name')] = input.value;
+        }
+    });
+
+    fetch('/api/tables/{{ table_name }}/rows', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'HX-Request': 'true'
+        },
+        body: JSON.stringify(data)
+    }).then(function() {
+        window.location.reload();
+    });
+});
+</script>

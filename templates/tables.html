@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Tables - SQLite Editor{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Tables</h2>
+        <button class="btn btn-primary"
+                onclick="document.getElementById('create-table-form').style.display = document.getElementById('create-table-form').style.display === 'none' ? 'block' : 'none'">
+            + New Table
+        </button>
+    </div>
+
+    <div id="create-table-form" style="display: none; margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+        <h3 style="margin-bottom: 1rem;">Create New Table</h3>
+        <form id="create-table-actual-form">
+            <div class="form-group">
+                <label for="table-name">Table Name</label>
+                <input type="text" id="table-name" name="name" pattern="[a-zA-Z_][a-zA-Z0-9_]*" required
+                       placeholder="my_table" style="width: 100%;">
+            </div>
+            <div id="column-fields">
+                <div class="form-row" data-col-row>
+                    <div class="form-group">
+                        <label>Column Name</label>
+                        <input type="text" name="col_name" pattern="[a-zA-Z_][a-zA-Z0-9_]*" required placeholder="id">
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select name="col_type">
+                            <option value="TEXT">TEXT</option>
+                            <option value="INTEGER">INTEGER</option>
+                            <option value="REAL">REAL</option>
+                            <option value="BLOB">BLOB</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nullable</label>
+                        <select name="col_nullable">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button type="button" class="btn btn-sm btn-success" onclick="addColumnField()">+ Add Column</button>
+                <button type="submit" class="btn btn-primary">Create Table</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="table-list">
+        {% include "partials/table_list.html" %}
+    </div>
+</div>
+
+<script>
+function addColumnField() {
+    var container = document.getElementById('column-fields');
+    var row = document.createElement('div');
+    row.className = 'form-row';
+    row.setAttribute('data-col-row', '');
+
+    var nameGroup = document.createElement('div');
+    nameGroup.className = 'form-group';
+    var nameLabel = document.createElement('label');
+    nameLabel.textContent = 'Column Name';
+    var nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.name = 'col_name';
+    nameInput.pattern = '[a-zA-Z_][a-zA-Z0-9_]*';
+    nameInput.required = true;
+    nameInput.placeholder = 'column_name';
+    nameGroup.appendChild(nameLabel);
+    nameGroup.appendChild(nameInput);
+
+    var typeGroup = document.createElement('div');
+    typeGroup.className = 'form-group';
+    var typeLabel = document.createElement('label');
+    typeLabel.textContent = 'Type';
+    var typeSelect = document.createElement('select');
+    typeSelect.name = 'col_type';
+    ['TEXT', 'INTEGER', 'REAL', 'BLOB'].forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        typeSelect.appendChild(opt);
+    });
+    typeGroup.appendChild(typeLabel);
+    typeGroup.appendChild(typeSelect);
+
+    var nullGroup = document.createElement('div');
+    nullGroup.className = 'form-group';
+    var nullLabel = document.createElement('label');
+    nullLabel.textContent = 'Nullable';
+    var nullSelect = document.createElement('select');
+    nullSelect.name = 'col_nullable';
+    [['true', 'Yes'], ['false', 'No']].forEach(function(pair) {
+        var opt = document.createElement('option');
+        opt.value = pair[0];
+        opt.textContent = pair[1];
+        nullSelect.appendChild(opt);
+    });
+    nullGroup.appendChild(nullLabel);
+    nullGroup.appendChild(nullSelect);
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-sm btn-danger';
+    removeBtn.textContent = 'x';
+    removeBtn.onclick = function() { row.remove(); };
+
+    row.appendChild(nameGroup);
+    row.appendChild(typeGroup);
+    row.appendChild(nullGroup);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+}
+
+document.getElementById('create-table-actual-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = e.target;
+    var tableName = document.getElementById('table-name').value;
+    var colNames = form.querySelectorAll('[name="col_name"]');
+    var colTypes = form.querySelectorAll('[name="col_type"]');
+    var colNullables = form.querySelectorAll('[name="col_nullable"]');
+
+    var columns = [];
+    for (var i = 0; i < colNames.length; i++) {
+        columns.push({
+            name: colNames[i].value,
+            col_type: colTypes[i].value,
+            nullable: colNullables[i].value === 'true',
+            default_value: null
+        });
+    }
+
+    fetch('/api/tables', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'HX-Request': 'true'
+        },
+        body: JSON.stringify({ name: tableName, columns: columns })
+    }).then(function() {
+        window.location.reload();
+    });
+});
+</script>
+{% endblock %}
