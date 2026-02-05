@@ -56,7 +56,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "use_spawn_team": true,
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep --timeout 300",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
-      "task_ids": ["CRUISE-006", "CRUISE-007"]
+      "task_ids": ["CRUISE-006", "CRUISE-006B", "CRUISE-007"]
     },
     {
       "id": "SPAWN-004",
@@ -180,20 +180,37 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     },
     {
       "id": "CRUISE-006",
-      "subject": "Implement SQLite database layer for table management",
-      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) Create a new table with a given name and column definitions (name, type, nullable, default). (4) Drop a table by name. (5) Get table schema/structure (column names, types, constraints). (6) Add a column to a table. (7) Remove a column from a table (using table recreation for SQLite < 3.35). (8) Rename a column. (9) Basic CRUD for rows: list rows, insert row, update row, delete row. Use proper SQL parameter binding to prevent injection. Include unit tests for the database operations.",
+      "subject": "Database initialization and table management",
+      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) Create a new table with a given name and column definitions (name, type, nullable, default). (4) Drop a table by name. (5) Get table schema/structure (column names, types, constraints). (6) Add a column to a table. (7) Remove a column from a table (using table recreation for SQLite < 3.35). (8) Rename a column. Use proper SQL parameter binding to prevent injection. Table and column names must be validated/sanitized. Include unit tests for all database initialization and table management operations.",
       "blocked_by": ["CRUISE-002"],
       "complexity": "high",
       "acceptance_criteria": [
-        "src/db.rs exists with all database operations",
+        "src/db.rs exists with database initialization and table management operations",
+        "Database connection pool initializes with WAL mode enabled",
         "Can list tables, create tables, drop tables",
         "Can get table schema with column details",
         "Can add, remove, and rename columns",
-        "Can perform row CRUD operations",
         "All SQL uses parameter binding (no string interpolation for values)",
         "Table and column names are validated/sanitized to prevent SQL injection",
-        "Unit tests pass for all operations",
-        "WAL mode is enabled for better concurrent access"
+        "Unit tests pass for all table management operations"
+      ],
+      "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+      "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "spawn_instance": "SPAWN-003"
+    },
+    {
+      "id": "CRUISE-006B",
+      "subject": "Row-level CRUD operations",
+      "description": "Extend src/db.rs with row-level CRUD operations: (1) List rows from a table with pagination support (offset/limit). (2) Insert a new row with given column values. (3) Update an existing row by rowid. (4) Delete a row by rowid. Use proper SQL parameter binding to prevent injection. Include unit tests for all row CRUD operations.",
+      "blocked_by": ["CRUISE-006"],
+      "complexity": "medium",
+      "acceptance_criteria": [
+        "Row listing with pagination (offset/limit) works correctly",
+        "Can insert a row with arbitrary column values",
+        "Can update an existing row by rowid",
+        "Can delete a row by rowid",
+        "All SQL uses parameter binding (no string interpolation for values)",
+        "Unit tests pass for all row CRUD operations"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
@@ -203,7 +220,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       "id": "CRUISE-007",
       "subject": "Implement API route handlers",
       "description": "Create src/routes.rs (or src/routes/ module) with Axum handlers: (1) GET /api/tables — list all tables. (2) POST /api/tables — create a new table. (3) DELETE /api/tables/:name — drop a table. (4) GET /api/tables/:name/schema — get table structure. (5) POST /api/tables/:name/columns — add a column. (6) DELETE /api/tables/:name/columns/:col — remove a column. (7) GET /api/tables/:name/rows — list rows (with pagination). (8) POST /api/tables/:name/rows — insert a row. (9) PUT /api/tables/:name/rows/:id — update a row. (10) DELETE /api/tables/:name/rows/:id — delete a row. All routes require authentication (use AuthUser extractor). Wire all routes into the main Axum router.",
-      "blocked_by": ["CRUISE-004", "CRUISE-006"],
+      "blocked_by": ["CRUISE-004", "CRUISE-006", "CRUISE-006B"],
       "complexity": "high",
       "acceptance_criteria": [
         "All API endpoints are implemented and wired to the router",
@@ -332,8 +349,9 @@ CRUISE-001 (.gitignore)
   ├── CRUISE-002 (Cargo.toml & project init)
   │     ├── CRUISE-004 (JWT middleware) ──┐
   │     │     └── CRUISE-005 (.well-known) │
-  │     └── CRUISE-006 (Database layer)   │
-  │           └── CRUISE-007 (API routes) ←┘
+  │     └── CRUISE-006 (DB init & table mgmt) │
+  │           └── CRUISE-006B (Row CRUD)      │
+  │                 └── CRUISE-007 (API routes) ←┘
   │                 └── CRUISE-008 (HTML templates)
   │                       └── CRUISE-009 (View handlers)
   │                             └── CRUISE-010 (Playwright setup)
@@ -349,7 +367,7 @@ CRUISE-001 (.gitignore)
 |----------|-------|-------------|----------------|
 | SPAWN-001 | 001, 002, 003 | Foundation tasks, sequential, low-risk | No — straightforward file creation |
 | SPAWN-002 | 004, 005 | Security-critical auth code | Yes — crypto code needs review |
-| SPAWN-003 | 006, 007 | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
+| SPAWN-003 | 006, 006B, 007 | Core data layer, tightly coupled | Yes — SQL injection prevention needs review |
 | SPAWN-004 | 008, 009 | Frontend rendering, tightly coupled | No — templates are low-risk |
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
