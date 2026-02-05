@@ -5,7 +5,7 @@
 Build a Rust web application that provides a browser-based UI for editing SQLite databases. The application uses Axum as the web framework, htmx for the interactive frontend, JWT (RS256) authentication with a local Certificate Authority, and Playwright for end-to-end testing.
 
 **Architecture Summary:**
-- **Backend**: Rust + Axum 0.8 (current stable), serving both API endpoints and HTML templates
+- **Backend**: Rust + Axum 0.7 (current stable; verify latest stable at https://crates.io/crates/axum before starting), serving both API endpoints and HTML templates
 - **Database**: SQLite via `rusqlite` (simpler for direct DDL operations like ALTER TABLE)
 - **Auth**: RS256 JWT with a local CA — the app validates tokens but does not issue them. A CLI tool or script generates tokens for testing. A `.well-known/jwks.json` endpoint exposes the public key.
 - **Frontend**: Server-rendered HTML with htmx for dynamic interactions. MiniJinja templates for rendering.
@@ -120,7 +120,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-002",
       "subject": "Initialize Rust project with Cargo.toml and dependencies",
-      "description": "Create the Cargo.toml with all required dependencies: axum 0.8 (with macros feature), tokio (full features), rusqlite (with bundled feature for portable SQLite), jsonwebtoken (with aws_lc_rs or ring backend), minijinja (with loader feature), serde/serde_json, tower-http (cors, static file serving), tracing/tracing-subscriber for logging. Set up the basic src/ directory structure: main.rs, lib.rs, config.rs. The main.rs should have a skeleton that initializes logging, loads config, and starts the Axum server.",
+      "description": "Create the Cargo.toml with all required dependencies: axum 0.7 (with macros feature; check https://crates.io/crates/axum for latest stable before pinning), tokio (full features), rusqlite (with bundled feature for portable SQLite), jsonwebtoken (with aws_lc_rs or ring backend), minijinja (with loader feature), serde/serde_json, tower-http (cors, static file serving), tracing/tracing-subscriber for logging. Set up the basic src/ directory structure: main.rs, lib.rs, config.rs. The main.rs should have a skeleton that initializes logging, loads config, and starts the Axum server.",
       "blocked_by": ["CRUISE-001"],
       "complexity": "medium",
       "acceptance_criteria": [
