@@ -289,9 +289,10 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "All endpoints require authentication",
         "Endpoints return appropriate HTTP status codes",
         "Error responses include meaningful messages",
-        "Table name and column name inputs are validated",
+        "Table name and column name inputs are validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before use in any SQL statement, since identifiers cannot be parameterized in DML/DDL",
         "Integration tests pass for table and schema CRUD operations"
       ],
+      "critical_security_note": "Route handlers receive user-supplied table and column names from URL path segments and request bodies. These identifiers CANNOT be parameterized in SQL (neither DDL nor DML). All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before being passed to any database operation.",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
       "spawn_instance": "SPAWN-003"
@@ -308,8 +309,10 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "Endpoints return appropriate HTTP status codes",
         "Pagination works correctly with offset/limit parameters",
         "Error responses include meaningful messages",
+        "Table name inputs from URL path segments are validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before use in any SQL statement, since identifiers cannot be parameterized in DML",
         "Integration tests pass for row CRUD operations"
       ],
+      "critical_security_note": "Route handlers receive user-supplied table names from URL path segments. These identifiers CANNOT be parameterized in SQL DML statements. All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before being passed to any database operation.",
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
       "spawn_instance": "SPAWN-003B"
