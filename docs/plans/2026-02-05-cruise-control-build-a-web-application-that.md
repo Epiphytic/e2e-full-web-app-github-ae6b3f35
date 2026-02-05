@@ -195,6 +195,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "Table and column names CANNOT be parameterized in SQL (neither in DDL nor DML). All identifier inputs MUST be validated against a strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before interpolation into any SQL string. This is the ONLY safe mechanism for identifier handling and must be enforced in every code path that constructs SQL with dynamic identifiers.",
       "spawn_instance": "SPAWN-003"
     },
     {
@@ -213,6 +214,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "Table and column names CANNOT be parameterized in SQL DDL statements. All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before interpolation into any SQL string.",
       "spawn_instance": "SPAWN-003"
     },
     {
@@ -232,6 +234,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "Table and column names CANNOT be parameterized in SQL DDL statements (ALTER TABLE, etc.). All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before interpolation into any SQL string.",
       "spawn_instance": "SPAWN-003"
     },
     {
@@ -252,6 +255,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
+      "critical_security_note": "Table and column names CANNOT be parameterized in SQL DML statements (SELECT, INSERT, UPDATE, DELETE). All identifier inputs MUST be validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) via the CRUISE-006 validation function before interpolation into any SQL string.",
       "spawn_instance": "SPAWN-003"
     },
     {
