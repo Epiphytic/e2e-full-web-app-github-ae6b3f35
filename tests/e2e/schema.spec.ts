@@ -91,6 +91,10 @@ test.describe("Schema Management", () => {
     const row = rowsData.rows[0];
     const idIndex = rowsData.columns.indexOf("id");
     expect(row[idIndex]).toBe(42);
+    // The new column should appear in the schema and have null for existing rows
+    expect(rowsData.columns).toContain("email");
+    const emailIndex = rowsData.columns.indexOf("email");
+    expect(row[emailIndex]).toBeNull();
   });
 
   test("should remove a column from a table", async ({ page }) => {
@@ -137,6 +141,7 @@ test.describe("Schema Management", () => {
     await expect(page.locator("td:has-text('id')")).toBeVisible();
 
     // Verify existing row data in the remaining column is preserved
+    // This is critical for SQLite where column removal requires recreating the table
     const rowsRes = await page.request.get(
       `http://127.0.0.1:3000/api/tables/${tableName}/rows`,
       {
@@ -154,6 +159,10 @@ test.describe("Schema Management", () => {
     const idIndex = rowsData.columns.indexOf("id");
     const idValues = rowsData.rows.map((row: any[]) => row[idIndex]).sort();
     expect(idValues).toEqual([1, 2]);
+    // Each row should only contain data for remaining columns, not the removed one
+    for (const row of rowsData.rows) {
+      expect(row.length).toBe(rowsData.columns.length);
+    }
   });
 
   test("should reflect column changes in table detail", async ({ page }) => {
