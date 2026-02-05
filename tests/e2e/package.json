@@ -1,0 +1,12 @@
+{
+  "name": "sqlite-editor-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:report": "playwright test --reporter=junit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

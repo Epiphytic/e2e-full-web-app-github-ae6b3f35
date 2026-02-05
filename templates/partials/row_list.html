@@ -1,0 +1,52 @@
+{% if rows is defined and rows|length > 0 %}
+<table>
+    <thead>
+        <tr>
+            {% for col in columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+            <th style="width: 80px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for val in row %}
+            <td>{{ val if val is not none else "(null)" }}</td>
+            {% endfor %}
+            <td>
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/api/tables/{{ table_name }}/rows/{{ row[0] }}"
+                        hx-headers='{"HX-Request": "true"}'
+                        hx-confirm="Delete this row?"
+                        hx-on::after-request="if(event.detail.successful) window.location.reload();">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if total is defined %}
+<div class="pagination">
+    {% if offset > 0 %}
+    <a class="btn btn-sm" style="background: #eee; color: #333;"
+       href="/tables/{{ table_name }}?offset={{ offset - limit }}&limit={{ limit }}">
+        &larr; Previous
+    </a>
+    {% endif %}
+    <span style="color: #666;">Showing {{ offset + 1 }}-{{ [offset + limit, total]|min }} of {{ total }}</span>
+    {% if offset + limit < total %}
+    <a class="btn btn-sm" style="background: #eee; color: #333;"
+       href="/tables/{{ table_name }}?offset={{ offset + limit }}&limit={{ limit }}">
+        Next &rarr;
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state">
+    <p>No rows yet.</p>
+</div>
+{% endif %}

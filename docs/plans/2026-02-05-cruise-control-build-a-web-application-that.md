@@ -204,11 +204,11 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006",
       "subject": "Database initialization and connection management",
-      "description": "Create src/db.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) A strict identifier validation function for table names and column names. SQL parameter binding does NOT support identifiers (table names, column names) — only data values — so all identifiers used in DDL (CREATE TABLE, ALTER TABLE, DROP TABLE) and DML (SELECT, INSERT, UPDATE, DELETE) statements must be validated against a strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings. This function must reject any input that does not match, returning an error. It will be reused by all subsequent database tasks (CRUISE-006A, CRUISE-006B, CRUISE-006C) as the sole mechanism for identifier safety. Include unit tests for connection initialization (WAL mode enabled), table listing, and identifier validation (including tests that verify malicious input like SQL injection attempts, e.g. 'users; DROP TABLE', 'col\"name', and unicode tricks, are all rejected).",
+      "description": "Create src/db/mod.rs with: (1) Database connection pool initialization using rusqlite with WAL mode. (2) Functions to list all user tables (excluding sqlite_ internal tables). (3) A strict identifier validation function for table names and column names. SQL parameter binding does NOT support identifiers (table names, column names) — only data values — so all identifiers used in DDL (CREATE TABLE, ALTER TABLE, DROP TABLE) and DML (SELECT, INSERT, UPDATE, DELETE) statements must be validated against a strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings. This function must reject any input that does not match, returning an error. It will be reused by all subsequent database tasks (CRUISE-006A, CRUISE-006B, CRUISE-006C) as the sole mechanism for identifier safety. (4) Shared type definitions (ColumnDef, ColumnInfo) used across submodules. The db module uses a directory structure (src/db/) with submodules for tables.rs, columns.rs, and rows.rs to maintain clear separation of concerns matching the task granularity (CRUISE-006A, CRUISE-006C, CRUISE-006B respectively). Include unit tests for connection initialization (WAL mode enabled), table listing, and identifier validation (including tests that verify malicious input like SQL injection attempts, e.g. 'users; DROP TABLE', 'col\"name', and unicode tricks, are all rejected).",
       "blocked_by": ["CRUISE-002"],
       "complexity": "medium",
       "acceptance_criteria": [
-        "src/db.rs exists with database connection and initialization logic",
+        "src/db/mod.rs exists with database connection, initialization logic, and shared types",
         "Database connection pool initializes with WAL mode enabled",
         "Can list all user tables (excluding sqlite_ internal tables)",
         "Identifier validation function exists and validates against allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$)",
@@ -223,7 +223,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006A",
       "subject": "Table-level schema operations (create, drop, get schema)",
-      "description": "Extend src/db.rs with table-level schema operations: (1) Create a new table with a given name and column definitions (name, type, nullable, default). (2) Drop a table by name. (3) Get table schema/structure (column names, types, constraints). Use SQL parameter binding for all data values to prevent injection. Since DDL statements (CREATE TABLE, DROP TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all table-level schema operations.",
+      "description": "Create src/db/tables.rs with table-level schema operations: (1) Create a new table with a given name and column definitions (name, type, nullable, default). (2) Drop a table by name. (3) Get table schema/structure (column names, types, constraints). Use SQL parameter binding for all data values to prevent injection. Since DDL statements (CREATE TABLE, DROP TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all table-level schema operations.",
       "blocked_by": ["CRUISE-006"],
       "complexity": "medium",
       "acceptance_criteria": [
@@ -242,7 +242,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006C",
       "subject": "Column-level schema operations (add, remove, rename)",
-      "description": "Extend src/db.rs with column-level schema operations: (1) Add a column to a table. (2) Remove a column from a table (using table recreation for SQLite < 3.35). (3) Rename a column. Use SQL parameter binding for all data values to prevent injection. Since DDL statements (ALTER TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all column-level schema operations, including the table recreation fallback for column removal.",
+      "description": "Create src/db/columns.rs with column-level schema operations: (1) Add a column to a table. (2) Remove a column from a table (using table recreation for SQLite < 3.35). (3) Rename a column. Use SQL parameter binding for all data values to prevent injection. Since DDL statements (ALTER TABLE) do not support parameter binding for identifiers (table names, column names), reuse the identifier validation function from CRUISE-006 to validate all identifiers before interpolation into SQL strings. Include unit tests for all column-level schema operations, including the table recreation fallback for column removal.",
       "blocked_by": ["CRUISE-006A"],
       "complexity": "high",
       "acceptance_criteria": [
@@ -262,7 +262,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006B",
       "subject": "Row-level CRUD operations",
-      "description": "Extend src/db.rs with row-level CRUD operations: (1) List rows from a table with pagination support (offset/limit). (2) Insert a new row with given column values. (3) Update an existing row by rowid. (4) Delete a row by rowid. Use proper SQL parameter binding for all data values to prevent injection. Since DML statements (SELECT, INSERT, UPDATE, DELETE) do not support parameter binding for identifiers (table names, column names), all identifiers MUST be strictly validated against an allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings — reuse the identifier validation function from CRUISE-006. Include unit tests for all row CRUD operations, including tests that verify identifier validation rejects malicious input.",
+      "description": "Create src/db/rows.rs with row-level CRUD operations: (1) List rows from a table with pagination support (offset/limit). (2) Insert a new row with given column values. (3) Update an existing row by rowid. (4) Delete a row by rowid. Use proper SQL parameter binding for all data values to prevent injection. Since DML statements (SELECT, INSERT, UPDATE, DELETE) do not support parameter binding for identifiers (table names, column names), all identifiers MUST be strictly validated against an allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings — reuse the identifier validation function from CRUISE-006. Include unit tests for all row CRUD operations, including tests that verify identifier validation rejects malicious input.",
       "blocked_by": ["CRUISE-006"],
       "complexity": "medium",
       "acceptance_criteria": [
@@ -499,6 +499,15 @@ CRUISE-001 (.gitignore)
 | SPAWN-005 | 010, 011 | E2E test infrastructure and tests | Yes — test reliability needs review |
 | SPAWN-006 | 012 | CI/CD configuration | No — YAML config, no Bash needed |
 
+### Commit Boundary Rules
+
+Each spawn instance MUST produce its own separate commit(s). Spawn instances that can run in parallel (e.g., SPAWN-002 and SPAWN-003/003B) must NOT be combined into a single commit. This ensures:
+- **Reviewable diffs**: Each commit has a focused review surface (auth code separate from database code)
+- **Bisectable history**: Issues can be traced to specific functional areas
+- **Task traceability**: Commits map 1:1 to spawn instances, matching the plan's task granularity
+
+Specifically, SPAWN-002 (JWT Authentication) and SPAWN-003/003B (Database layer) must always be separate commits, even when implemented in the same session. The database module's internal split into `src/db/mod.rs`, `src/db/tables.rs`, `src/db/columns.rs`, and `src/db/rows.rs` mirrors the task split (CRUISE-006, 006A, 006C, 006B) and supports independent review of each concern.
+
 ## File Structure
 
 ```
@@ -525,7 +534,11 @@ CRUISE-001 (.gitignore)
 │   ├── lib.rs
 │   ├── config.rs
 │   ├── auth.rs
-│   ├── db.rs
+│   ├── db/
+│   │   ├── mod.rs           (DB init, connection mgmt, identifier validation — CRUISE-006)
+│   │   ├── tables.rs        (table-level schema ops — CRUISE-006A)
+│   │   ├── columns.rs       (column-level schema ops — CRUISE-006C)
+│   │   └── rows.rs          (row-level CRUD — CRUISE-006B)
 │   ├── routes.rs
 │   └── views.rs
 ├── templates/

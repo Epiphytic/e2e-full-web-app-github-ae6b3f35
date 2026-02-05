@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Login - SQLite Editor{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 4rem auto;">
+    <h2>Login</h2>
+    <p style="color: #666; margin-bottom: 1.5rem;">Paste your JWT token to authenticate.</p>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="token">JWT Token</label>
+            <textarea id="token" name="token" rows="4"
+                      style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 0.85rem; resize: vertical;"
+                      placeholder="eyJhbGciOiJSUzI1NiIs..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+    </form>
+</div>
+{% endblock %}
