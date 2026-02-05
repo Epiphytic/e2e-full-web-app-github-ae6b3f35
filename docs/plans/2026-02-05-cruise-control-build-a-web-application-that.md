@@ -202,7 +202,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
     {
       "id": "CRUISE-006B",
       "subject": "Row-level CRUD operations",
-      "description": "Extend src/db.rs with row-level CRUD operations: (1) List rows from a table with pagination support (offset/limit). (2) Insert a new row with given column values. (3) Update an existing row by rowid. (4) Delete a row by rowid. Use proper SQL parameter binding to prevent injection. Include unit tests for all row CRUD operations.",
+      "description": "Extend src/db.rs with row-level CRUD operations: (1) List rows from a table with pagination support (offset/limit). (2) Insert a new row with given column values. (3) Update an existing row by rowid. (4) Delete a row by rowid. Use proper SQL parameter binding for all data values to prevent injection. Since DML statements (SELECT, INSERT, UPDATE, DELETE) do not support parameter binding for identifiers (table names, column names), all identifiers MUST be strictly validated against an allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before being interpolated into SQL strings — reuse the identifier validation function from CRUISE-006. Include unit tests for all row CRUD operations, including tests that verify identifier validation rejects malicious input.",
       "blocked_by": ["CRUISE-006"],
       "complexity": "medium",
       "acceptance_criteria": [
@@ -210,8 +210,10 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
         "Can insert a row with arbitrary column values",
         "Can update an existing row by rowid",
         "Can delete a row by rowid",
-        "All SQL uses parameter binding (no string interpolation for values)",
-        "Unit tests pass for all row CRUD operations"
+        "All SQL data values use parameter binding (no string interpolation for values)",
+        "All SQL identifiers (table names, column names) in DML statements are validated against the strict allowlist regex (^[a-zA-Z_][a-zA-Z0-9_]*$) before interpolation, since SQL parameter binding does not support identifiers",
+        "Malicious identifier inputs (e.g., containing SQL injection attempts) are rejected with an error",
+        "Unit tests pass for all row CRUD operations, including identifier validation rejection tests"
       ],
       "permissions": ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
       "cli_params": "claude --model sonnet --allowedTools Read,Write,Edit,Bash,Glob,Grep",
