@@ -27,6 +27,7 @@ Build a Rust web application that provides a browser-based UI for editing SQLite
 5. **htmx + complex table editing** — Adding/removing columns with type definitions and constraints requires careful form design to avoid a confusing UX.
 6. **Playwright test stability** — E2E tests against a local server can be flaky. Tests need proper server startup/shutdown lifecycle management.
 7. **Super-Linter configuration** — Super-Linter runs many linters by default. Need to configure it to only run relevant linters (Rust/clippy, HTML, JS, YAML) to avoid false positives.
+8. **SQL injection via dynamic identifiers** — SQL parameter binding only works for data values, NOT for identifiers (table names, column names). Since this application performs DDL operations (CREATE TABLE, ALTER TABLE, DROP TABLE) and DML operations with user-supplied table/column names, all identifiers must be strictly validated against an allowlist regex (`^[a-zA-Z_][a-zA-Z0-9_]*$`) before being interpolated into SQL strings. This validation must be centralized in a single function (see CRUISE-006) and reused by all database operations. Failure to validate identifiers would allow SQL injection attacks that parameter binding cannot prevent.
 
 ## Implementation Plan
 
