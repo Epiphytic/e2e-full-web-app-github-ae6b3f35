@@ -1,6 +1,13 @@
 name: Lint
 
+# NOTE: This workflow is a foundational quality gate that should be introduced
+# at the start of a project (e.g., during the Foundation phase) so that lint
+# feedback is available immediately as code is developed, rather than being
+# added at the end where accumulated violations surface all at once.
+
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
