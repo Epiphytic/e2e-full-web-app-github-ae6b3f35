@@ -41,6 +41,19 @@ test.describe("Schema Management", () => {
       { name: "id", col_type: "INTEGER", nullable: false, default_value: null },
     ]);
 
+    // Insert a row before adding the column to verify data is preserved
+    const insertRes = await page.request.post(
+      `http://127.0.0.1:3000/api/tables/${tableName}/rows`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        data: { id: "42" },
+      }
+    );
+    expect(insertRes.ok()).toBeTruthy();
+
     // Navigate to table detail
     await page.goto(`/tables/${tableName}`);
     await expect(page.locator("h2")).toHaveText(tableName);
@@ -60,6 +73,22 @@ test.describe("Schema Management", () => {
 
     // Verify the column appears in schema
     await expect(page.locator("td:has-text('email')")).toBeVisible();
+
+    // Verify existing row data is preserved after column addition
+    const rowsRes = await page.request.get(
+      `http://127.0.0.1:3000/api/tables/${tableName}/rows`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    expect(rowsRes.ok()).toBeTruthy();
+    const rowsData = await rowsRes.json();
+    expect(rowsData.total).toBe(1);
+    expect(rowsData.rows.length).toBe(1);
+    // The original id value should still be intact
+    const row = rowsData.rows[0];
+    const idIndex = rowsData.columns.indexOf("id");
+    expect(row[idIndex]).toBe(42);
   });
 
   test("should remove a column from a table", async ({ page }) => {
@@ -68,6 +97,22 @@ test.describe("Schema Management", () => {
       { name: "id", col_type: "INTEGER", nullable: false, default_value: null },
       { name: "to_remove", col_type: "TEXT", nullable: true, default_value: null },
     ]);
+
+    // Insert rows before removing the column to verify data integrity
+    // SQLite column removal requires table recreation and data copy
+    for (const [id, text] of [["1", "alpha"], ["2", "beta"]]) {
+      const res = await page.request.post(
+        `http://127.0.0.1:3000/api/tables/${tableName}/rows`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          data: { id, to_remove: text },
+        }
+      );
+      expect(res.ok()).toBeTruthy();
+    }
 
     // Navigate to table detail
     await page.goto(`/tables/${tableName}`);
@@ -88,6 +133,25 @@ test.describe("Schema Management", () => {
     await expect(page.locator("td:has-text('to_remove')")).not.toBeVisible();
     // id column should still be there
     await expect(page.locator("td:has-text('id')")).toBeVisible();
+
+    // Verify existing row data in the remaining column is preserved
+    const rowsRes = await page.request.get(
+      `http://127.0.0.1:3000/api/tables/${tableName}/rows`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    expect(rowsRes.ok()).toBeTruthy();
+    const rowsData = await rowsRes.json();
+    expect(rowsData.total).toBe(2);
+    expect(rowsData.rows.length).toBe(2);
+    // The removed column should no longer appear in the columns list
+    expect(rowsData.columns).not.toContain("to_remove");
+    expect(rowsData.columns).toContain("id");
+    // The id values should be preserved after table recreation
+    const idIndex = rowsData.columns.indexOf("id");
+    const idValues = rowsData.rows.map((row: any[]) => row[idIndex]).sort();
+    expect(idValues).toEqual([1, 2]);
   });
 
   test("should reflect column changes in table detail", async ({ page }) => {

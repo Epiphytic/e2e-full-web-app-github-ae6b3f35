@@ -1,0 +1,12 @@
+[TECHNICALFEASIBILITY REVIEW - NEEDS CHANGES]
+
+The overall architecture of the application is sound, with appropriate technology choices (Rust/Axum, HTMX, SQLite) and robust security measures like identifier validation and multi-layered CSRF protection.
+
+However, several technical issues in the testing infrastructure and configuration need addressing:
+
+1. **E2E Test Stability**: Multiple tests share a single SQLite database file (test_e2e.db). Using fixed table names in tables.spec.ts can lead to interference and flakiness when tests are executed in parallel. Unique table names should be used consistently across all tests.
+2. **Redundant Infrastructure Setup**: Generating JWT keys in the beforeAll hook of every spec file is inefficient and can lead to race conditions. This should be moved to a global setup or handled once during the CI workflow.
+3. **CI/CD Efficiency**: The Playwright configuration uses cargo run, which adds unnecessary overhead in CI environments where the binary has already been built. Running the binary directly is preferred.
+4. **Validation Coverage**: Schema modification tests should be expanded to verify row data preservation, ensuring the table recreation logic in the database layer is fully validated.
+
+Please address these points to ensure the long-term maintainability and reliability of the testing suite.
