@@ -1,3 +1,10 @@
+/**
+ * Table Management E2E tests.
+ *
+ * E2E tests are split by feature (auth, tables, schema) so each suite
+ * can run independently and in parallel for faster feedback cycles.
+ * See also: auth.spec.ts, schema.spec.ts
+ */
 import { test, expect, Page } from "@playwright/test";
 import { generateToken } from "./helpers";
 

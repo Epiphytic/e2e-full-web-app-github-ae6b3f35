@@ -1,3 +1,10 @@
+/**
+ * Authentication E2E tests.
+ *
+ * E2E tests are split by feature (auth, tables, schema) so each suite
+ * can run independently and in parallel for faster feedback cycles.
+ * See also: tables.spec.ts, schema.spec.ts
+ */
 import { test, expect } from "@playwright/test";
 import { generateToken, generateExpiredToken } from "./helpers";
 
