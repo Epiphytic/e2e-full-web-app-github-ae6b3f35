@@ -12,6 +12,7 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3000",
     trace: "on-first-retry",
   },
+  // Keys are generated in globalSetup (global-setup.ts) before any workers start
   webServer: {
     command:
       "cd ../.. && DATABASE_PATH=test_e2e.db JWT_PUBLIC_KEY_PATH=certs/jwt-ca.pub ./target/debug/sqlite-editor",
