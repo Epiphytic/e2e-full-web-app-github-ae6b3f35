@@ -1,4 +1,4 @@
-{% if columns is defined and columns|length > 0 %}
+{% if schema_columns is defined and schema_columns|length > 0 %}
 <table>
     <thead>
         <tr>
@@ -11,7 +11,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for col in columns %}
+        {% for col in schema_columns %}
         <tr>
             <td>{{ col.name }}</td>
             <td>{{ col.col_type }}</td>

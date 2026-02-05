@@ -50,10 +50,9 @@
         <div class="nav-right">
             {% if user %}
             <span class="user-info">{{ user.username }}</span>
-            <button class="btn btn-sm btn-danger"
-                    hx-post="/logout"
-                    hx-headers='{"HX-Request": "true"}'
-                    hx-redirect="/login">Logout</button>
+            <form method="post" action="/logout" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-danger">Logout</button>
+            </form>
             {% endif %}
         </div>
     </nav>
