@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { generateToken, generateExpiredToken } from "./helpers";
 
+test.describe.configure({ mode: "parallel" });
+
 test.describe("Authentication", () => {
   test("should show login page when not authenticated", async ({ page }) => {
     await page.goto("/");

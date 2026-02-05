@@ -1,6 +1,8 @@
 import { test, expect, Page } from "@playwright/test";
 import { generateToken } from "./helpers";
 
+test.describe.configure({ mode: "parallel" });
+
 let tableCounter = 0;
 function uniqueTableName(): string {
   tableCounter++;

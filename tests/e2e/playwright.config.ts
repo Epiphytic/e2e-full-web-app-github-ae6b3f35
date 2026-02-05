@@ -4,6 +4,7 @@ export default defineConfig({
   globalSetup: require.resolve("./global-setup"),
   testDir: ".",
   testMatch: "*.spec.ts",
+  fullyParallel: true,
   timeout: 30000,
   retries: 1,
   reporter: [["list"], ["junit", { outputFile: "test-results/results.xml" }]],
