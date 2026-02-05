@@ -4,9 +4,8 @@ import path from "path";
 const PROJECT_ROOT = path.resolve(__dirname, "../..");
 
 // Key generation is handled once in global-setup.ts (via Playwright's globalSetup).
-// Do NOT add ensureKeysExist() or similar per-spec beforeAll hooks here — doing so
-// is redundant and risks race conditions when parallel workers try to write the
-// same key files simultaneously.
+// Do NOT add ensureKeysExist() or similar per-spec hooks here — doing so is
+// redundant and risks race conditions when parallel workers write the same files.
 
 export function generateToken(
   username: string,
